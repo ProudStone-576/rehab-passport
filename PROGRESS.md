@@ -90,3 +90,4 @@ Single source of truth for this project. Read this first; open only the file you
 - 2026-10-28 — v2: patient phone passport, Punjabi/bilingual, illustrations, step photos, verified YouTube videos.
 - 2026-10-28 — v3: Postgres backend (fixes "patient missing on other device" — data was per-browser localStorage), therapist accounts + demo clinic, live phone sync (sync codes removed), next visit date/time, visit-period progress, pain score, read-aloud.
 - 2026-10-29 — v4: animated exercise figures (rep counter, phases, slow/pause) on phone pages + library; bilingual header label contrast fix; poster + presentation script made as claude.ai artifacts.
+- 2026-11-02 — code moved to GitHub (proudstone-576/rehab-passport); Vercel deploys on push to `main`.
