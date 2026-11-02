@@ -67,7 +67,7 @@ Single source of truth for this project. Read this first; open only the file you
 
 ## Commands
 - Dev: `npm run dev` · Check: `npm run lint && npm run build` · Local prod: `npx next start -p 3456` (on Windows kill the node PID on 3456 afterwards — TaskStop leaves it running)
-- Deploy: `npx vercel deploy --prod --yes` from this folder (env vars already on Vercel)
+- Deploy: push to `main` on GitHub (proudstone-576/rehab-passport) → Vercel auto-deploys once the repo is connected in Vercel → Settings → Git. Fallback: `npx vercel deploy --prod --yes` from the PC folder (env vars already on Vercel)
 - E2E check used: headless Chrome via puppeteer-core script in session scratchpad (demo login, cross-browser save, phone tick+pain → clinic, 401/404 checks)
 
 ## Status
