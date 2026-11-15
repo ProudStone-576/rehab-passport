@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import Figure from "@/components/Figure";
+import Icon from "@/components/Icon";
 import Qr from "@/components/Qr";
 import { activePassport, allExercises, dateKey, defaultVisit, doseText, findExercise, uid } from "@/lib/logic";
 import { exerciseUrl } from "@/lib/share";
@@ -43,7 +45,14 @@ export default function PlanWizard({ id }: { id: string }) {
   const exercises = allExercises(data);
   const areas = useMemo(() => ["All", ...Array.from(new Set(exercises.map((e) => e.area)))], [exercises]);
 
-  if (!patient) return <p>Patient not found. <Link href="/">Back</Link></p>;
+  if (!patient) {
+    return (
+      <div className="card empty">
+        <strong>Patient not found</strong>
+        <Link href="/patients" className="btn">Back to patients</Link>
+      </div>
+    );
+  }
 
   const selected = new Set(items.map((i) => i.exerciseId));
 
@@ -100,19 +109,20 @@ export default function PlanWizard({ id }: { id: string }) {
 
   return (
     <>
+      <Link href={`/patients/${id}`} className="crumb"><Icon name="back" size={16} />{patient.code}</Link>
       <div className="page-head">
         <div>
-          <Link href={`/patients/${id}`} className="muted small">← {patient.code}</Link>
-          <h1>{current ? `Update passport (v${current.version} → v${current.version + 1})` : "Create passport"}</h1>
-          <p className="muted">{patient.code} · {patient.condition}</p>
+          <h1>{current ? `Update passport, v${current.version} to v${current.version + 1}` : "Create passport"}</h1>
+          <p>{patient.code}, {patient.condition}</p>
         </div>
       </div>
 
-      <ol className="stepper">
+      <ol className="stepper" aria-label="Steps">
         {STEPS.map((s, i) => (
-          <li key={s} className={i === step ? "on" : i < step ? "done" : ""}>
-            <button type="button" onClick={() => (i < step || (i > step && items.length) ? goTo(i) : null)}>
-              <span>{i + 1}</span>{s}
+          <li key={s} className={i === step ? "on" : i < step ? "done" : ""} aria-current={i === step ? "step" : undefined}>
+            <button type="button" disabled={i > step && !items.length} onClick={() => (i < step || (i > step && items.length) ? goTo(i) : null)}>
+              <span>{i < step ? <Icon name="check" size={16} /> : i + 1}</span>
+              <b className="label">{s}</b>
             </button>
           </li>
         ))}
@@ -120,47 +130,54 @@ export default function PlanWizard({ id }: { id: string }) {
 
       {step === 0 && (
         <div className="card">
-          <h2>1 · Assess — select suitable exercises</h2>
+          <div className="card-head"><h2>Assess: choose suitable exercises</h2></div>
           <label className="block">
             Assessment summary
             <textarea rows={2} value={assessment} onChange={(e) => setAssessment(e.target.value)}
               placeholder="Key findings that justify this plan" />
           </label>
-          <div className="chips">
+          <div className="chips" role="group" aria-label="Body area">
             {areas.map((a) => (
-              <button key={a} type="button" className={a === filter ? "chip on" : "chip"} onClick={() => setFilter(a)}>{a}</button>
+              <button key={a} type="button" className={a === filter ? "chip on" : "chip"} aria-pressed={a === filter} onClick={() => setFilter(a)}>{a === "All" ? "All areas" : a}</button>
             ))}
           </div>
           <div className="ex-grid">
             {exercises.filter((e) => filter === "All" || e.area === filter).map((e) => (
-              <button key={e.id} type="button" className={selected.has(e.id) ? "ex on" : "ex"} onClick={() => toggle(e.id)}>
-                <span className="tick">{selected.has(e.id) ? "✓" : "+"}</span>
+              <button key={e.id} type="button" className={selected.has(e.id) ? "ex on" : "ex"} aria-pressed={selected.has(e.id)} onClick={() => toggle(e.id)}>
+                <span className="tick" aria-hidden="true">{selected.has(e.id) ? <Icon name="check" size={16} /> : <Icon name="plus" size={16} />}</span>
+                <span className="ex-fig">{e.builtin ? <Figure exerciseId={e.id} frame={1} height={90} /> : <span className="muted small">Custom</span>}</span>
                 <strong>{e.name}</strong>
-                <small>{e.area}{e.builtin ? "" : " · custom"}</small>
+                <small>{e.pa ? <span lang="pa">{e.pa.name}</span> : null}{e.pa ? ", " : ""}{e.area}{e.builtin ? "" : ", custom"}</small>
               </button>
             ))}
           </div>
-          <p className="muted small">{items.length} selected</p>
         </div>
       )}
 
       {step === 1 && (
         <div className="card">
-          <h2>2 · Personalize — dosage and safety instructions</h2>
+          <div className="card-head"><h2>Personalize: dose and safety advice</h2></div>
           {items.map((it) => {
             const ex = findExercise(data, it.exerciseId)!;
             return (
               <div key={it.id} className="dose-row">
-                <h3>{ex.name}</h3>
-                <div className="grid4">
-                  <label>Sets<input type="number" min={1} value={it.sets} onChange={(e) => patch(it.id, { sets: Number(e.target.value) })} /></label>
-                  <label>Reps<input type="number" min={1} value={it.reps} onChange={(e) => patch(it.id, { reps: Number(e.target.value) })} /></label>
-                  <label>Times a day<input type="number" min={1} value={it.perDay} onChange={(e) => patch(it.id, { perDay: Number(e.target.value) })} /></label>
-                  <label>Hold / tempo<input value={it.hold} placeholder="e.g. hold 5 s" onChange={(e) => patch(it.id, { hold: e.target.value })} /></label>
+                <div className="dose-head">
+                  {ex.builtin && <span className="mini"><Figure exerciseId={ex.id} frame={1} height={56} /></span>}
+                  <div>
+                    <h3>{ex.name}</h3>
+                    <p className="muted small">Prints as: <strong>{doseText(it)}</strong></p>
+                  </div>
                 </div>
-                <label className="block">Precautions<textarea rows={2} value={it.precautions} onChange={(e) => patch(it.id, { precautions: e.target.value })} /></label>
-                <label className="block">Note for patient (optional)<input value={it.notes} onChange={(e) => patch(it.id, { notes: e.target.value })} /></label>
-                <p className="muted small">Prints as: <strong>{doseText(it)}</strong></p>
+                <div className="grid4">
+                  <NumStep label="Sets" value={it.sets} onChange={(v) => patch(it.id, { sets: v })} />
+                  <NumStep label="Reps" value={it.reps} onChange={(v) => patch(it.id, { reps: v })} />
+                  <NumStep label="Times a day" value={it.perDay} onChange={(v) => patch(it.id, { perDay: v })} />
+                  <label>Hold or tempo<input value={it.hold} placeholder="e.g. hold 5 s" onChange={(e) => patch(it.id, { hold: e.target.value })} /></label>
+                </div>
+                <div className="grid2">
+                  <label className="block">Precautions<textarea rows={2} value={it.precautions} onChange={(e) => patch(it.id, { precautions: e.target.value })} /></label>
+                  <label className="block">Note for patient (optional)<textarea rows={2} value={it.notes} onChange={(e) => patch(it.id, { notes: e.target.value })} /></label>
+                </div>
               </div>
             );
           })}
@@ -169,10 +186,11 @@ export default function PlanWizard({ id }: { id: string }) {
 
       {step === 2 && (
         <div className="card">
-          <h2>3 · Demonstrate — optional QR video + printed guidance</h2>
+          <div className="card-head"><h2>Demonstrate: QR page and printed guidance</h2></div>
           <p className="muted">
-            Library exercises come with a short public video. Replace it with your own recording (ideally in the patient&apos;s language), or clear it and the
-            QR page still shows the written steps. Patients without a smartphone just use the printed text.
+            Each QR opens a phone page with an animated demonstration of the exercise, the steps and the dose. A video is optional: keep the
+            library&apos;s public video, replace it with your own recording (ideally in the patient&apos;s language), or clear it. Patients without a
+            smartphone use the printed pictures and text.
           </p>
           {items.map((it) => {
             const ex = findExercise(data, it.exerciseId)!;
@@ -182,11 +200,11 @@ export default function PlanWizard({ id }: { id: string }) {
                 <div className="grow">
                   <h3>{ex.name}</h3>
                   <label className="block">
-                    Video link
-                    <input value={it.videoUrl} placeholder="https://youtu.be/…" onChange={(e) => patch(it.id, { videoUrl: e.target.value })} />
+                    Video link (optional)
+                    <input type="url" value={it.videoUrl} placeholder="https://youtu.be/…" onChange={(e) => patch(it.id, { videoUrl: e.target.value })} />
                   </label>
                   {origin && (
-                    <a className="small" href={exerciseUrl(origin, it, ex, patient.language)} target="_blank" rel="noreferrer">Preview patient page ↗</a>
+                    <a className="small" href={exerciseUrl(origin, it, ex, patient.language)} target="_blank" rel="noreferrer">Preview the patient&apos;s page (opens in a new tab)</a>
                   )}
                 </div>
               </div>
@@ -197,30 +215,34 @@ export default function PlanWizard({ id }: { id: string }) {
 
       {step === 3 && (
         <div className="card">
-          <h2>Confirm passport</h2>
-          <table className="table">
-            <thead><tr><th>Exercise</th><th>Dose</th><th>Precautions</th><th>Video</th></tr></thead>
-            <tbody>
-              {items.map((it) => (
-                <tr key={it.id}>
-                  <td><strong>{findExercise(data, it.exerciseId)?.name}</strong></td>
-                  <td>{doseText(it)}</td>
-                  <td className="small">{it.precautions}</td>
-                  <td>{it.videoUrl ? "Yes" : <span className="muted">Text only</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <label className="block inline">
-            Next follow-up visit (date and time)
-            <input type="datetime-local" value={nextVisit} onChange={(e) => setNextVisit(e.target.value)} style={{ width: 240 }} />
-          </label>
-          <p className="muted small">Printed on the passport and shown on the patient&apos;s phone with a countdown. The paper tick grid runs up to this date.</p>
-          <label className="block inline">
-            Clinician time spent on this passport (minutes)
-            <input type="number" min={0} value={minutes} onChange={(e) => setMinutes(e.target.value)} style={{ width: 100 }} />
-          </label>
-          <p className="muted small">Pre-filled from the time this page was open. Recorded for the feasibility evaluation.</p>
+          <div className="card-head"><h2>Confirm the passport</h2></div>
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th scope="col">Exercise</th><th scope="col">Dose</th><th scope="col">Precautions</th><th scope="col">Video</th></tr></thead>
+              <tbody>
+                {items.map((it) => (
+                  <tr key={it.id}>
+                    <td><strong>{findExercise(data, it.exerciseId)?.name}</strong></td>
+                    <td>{doseText(it)}</td>
+                    <td className="small">{it.precautions}</td>
+                    <td>{it.videoUrl ? "Yes" : <span className="muted">Animation and text</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="grid2 confirm-fields">
+            <label>
+              Next follow-up visit (date and time)
+              <input type="datetime-local" value={nextVisit} onChange={(e) => setNextVisit(e.target.value)} />
+              <span className="hint">Printed on the passport and shown on the patient&apos;s phone with a countdown. The paper tick grid runs up to this date.</span>
+            </label>
+            <label>
+              Clinician time on this passport (minutes)
+              <input type="number" inputMode="numeric" min={0} value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+              <span className="hint">Pre-filled from the time this page was open. Recorded for the feasibility evaluation.</span>
+            </label>
+          </div>
           {current && (
             <p className="muted small">Saving replaces v{current.version}. Its log history is kept.</p>
           )}
@@ -228,14 +250,29 @@ export default function PlanWizard({ id }: { id: string }) {
       )}
 
       <div className="actions sticky">
-        {step > 0 && <button className="btn" type="button" onClick={() => goTo(step - 1)}>← Back</button>}
+        {step > 0 && <button className="btn" type="button" onClick={() => goTo(step - 1)}><Icon name="back" size={18} />Back</button>}
         <span className="grow" />
+        <span className="muted small" role="status">{items.length} {items.length === 1 ? "exercise" : "exercises"} selected</span>
         {step < 3 ? (
-          <button className="btn primary" type="button" disabled={!canNext} onClick={() => goTo(step + 1)}>Next →</button>
+          <button className="btn primary" type="button" disabled={!canNext} onClick={() => goTo(step + 1)}>Next: {STEPS[step + 1]}</button>
         ) : (
-          <button className="btn primary" type="button" onClick={save}>Save & print passport</button>
+          <button className="btn primary" type="button" onClick={save}>Save and print passport</button>
         )}
       </div>
     </>
+  );
+}
+
+/** A number field with large minus and plus buttons, easier than typing on a tablet. */
+function NumStep({ label, value, onChange, min = 1 }: { label: string; value: number; onChange: (v: number) => void; min?: number }) {
+  return (
+    <label>
+      {label}
+      <span className="num-step">
+        <button type="button" aria-label={`Fewer ${label.toLowerCase()}`} onClick={() => onChange(Math.max(min, value - 1))}>−</button>
+        <input type="number" inputMode="numeric" min={min} value={value} onChange={(e) => onChange(Math.max(min, Number(e.target.value) || min))} />
+        <button type="button" aria-label={`More ${label.toLowerCase()}`} onClick={() => onChange(value + 1)}>+</button>
+      </span>
+    </label>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AnimatedFigure from "@/components/AnimatedFigure";
 import Figure from "@/components/Figure";
+import Icon from "@/components/Icon";
 import { allExercises, uid } from "@/lib/logic";
 import { useStore } from "@/lib/store";
 import type { Exercise } from "@/lib/types";
@@ -40,6 +41,10 @@ export default function Library() {
   const [paSteps, setPaSteps] = useState("");
   const [paPrec, setPaPrec] = useState("");
   const [error, setError] = useState("");
+  const [q, setQ] = useState("");
+  const [areaF, setAreaF] = useState("");
+  const [selected, setSelected] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const list = allExercises(data);
   const areas = Array.from(new Set(list.map((e) => e.area)));
@@ -88,101 +93,165 @@ export default function Library() {
     update((d) => ({ ...d, photos: { ...d.photos, [exId]: (d.photos[exId] ?? []).filter((_, j) => j !== i) } }));
   }
 
+  const needle = q.trim().toLowerCase();
+  const shown = list.filter(
+    (e) => (!areaF || e.area === areaF) && (!needle || [e.name, e.pa?.name ?? "", e.area].some((t) => t.toLowerCase().includes(needle))),
+  );
+  const sel = list.find((e) => e.id === selected);
+  const photosOf = (id: string) => data.photos[id] ?? [];
+
+  function open(id: string) {
+    setSelected(id);
+    setAdding(false);
+    // On narrow screens the panel sits below the grid; bring it into view.
+    if (window.matchMedia("(max-width: 60rem)").matches) {
+      requestAnimationFrame(() => document.getElementById("lib-panel")?.scrollIntoView({ block: "start" }));
+    }
+  }
+
   return (
     <>
       <div className="page-head">
         <div>
           <h1>Exercise library</h1>
-          <p className="muted">
-            Therapist-approved instructions in English and ਪੰਜਾਬੀ. Built-in exercises are illustrative examples for the prototype.
-          </p>
+          <p>Therapist-approved instructions in English and <span lang="pa">ਪੰਜਾਬੀ</span>. Built-in exercises are illustrative examples for the prototype.</p>
+        </div>
+        <button type="button" className="btn primary" onClick={() => { setAdding(true); setSelected(""); }}>
+          <Icon name="plus" size={18} />Add custom exercise
+        </button>
+      </div>
+      {error && <p className="err" role="alert">{error}</p>}
+
+      <div className="toolbar">
+        <label className="search">
+          <Icon name="search" size={18} />
+          <span className="visually-hidden">Search exercises</span>
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search in English or Punjabi" autoComplete="off" />
+        </label>
+        <div className="chips" role="group" aria-label="Body area">
+          {["", ...areas].map((a) => (
+            <button key={a || "all"} type="button" className={areaF === a ? "chip on" : "chip"} aria-pressed={areaF === a} onClick={() => setAreaF(a)}>
+              {a || "All areas"}
+            </button>
+          ))}
         </div>
       </div>
-      {error && <p className="err">{error}</p>}
 
       <div className="lib">
         <div>
-          {areas.map((a) => (
-            <section key={a} className="card">
-              <h2>{a}</h2>
-              <div className="lib-list">
-                {list.filter((e) => e.area === a).map((e) => {
-                  const photos = data.photos[e.id] ?? [];
-                  return (
-                    <details key={e.id} className="lib-item">
-                      <summary>
-                        <span>
-                          <strong>{e.name}</strong>
-                          {e.pa && <span className="muted pa-name" lang="pa"> · {e.pa.name}</span>}
-                        </span>
-                        <span className="row-gap">
-                          {photos.length > 0 && <span className="pill">{photos.length} photo{photos.length > 1 ? "s" : ""}</span>}
-                          <span className={e.builtin ? "pill" : "pill custom"}>{e.builtin ? "built-in" : "custom"}</span>
-                        </span>
-                      </summary>
-                      <div className="lib-body">
-                        {e.builtin && (
-                          <div className="lib-figs">
-                            <Figure exerciseId={e.id} height={100} labels={["Start", "End"]} />
-                            <AnimatedFigure exerciseId={e.id} height={110} />
-                          </div>
+          {shown.length === 0 ? (
+            <div className="card empty">
+              <strong>No exercises match</strong>
+              <span>Try another word, or add it as a custom exercise.</span>
+              <button type="button" className="btn" onClick={() => { setQ(""); setAreaF(""); }}>Clear search</button>
+            </div>
+          ) : (
+            <ul className="lib-grid">
+              {shown.map((e) => {
+                const photos = photosOf(e.id);
+                return (
+                  <li key={e.id}>
+                    <button type="button" className={selected === e.id ? "lib-card on" : "lib-card"} aria-pressed={selected === e.id} onClick={() => open(e.id)}>
+                      <span className="lib-fig">
+                        {e.builtin ? (
+                          <Figure exerciseId={e.id} height={84} />
+                        ) : photos[0] ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- local data URLs
+                          <img src={photos[0]} alt="" />
+                        ) : (
+                          <span className="muted small">No drawing</span>
                         )}
-                        <div className="grid2">
-                          <ol className="steps">{e.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
-                          {e.pa && <ol className="steps" lang="pa">{e.pa.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>}
-                        </div>
-                        <p className="small"><strong>Precautions:</strong> {e.precautions}</p>
-                        {e.videoUrl && (
-                          <p className="small">
-                            <strong>Default video:</strong>{" "}
-                            <a href={e.videoUrl} target="_blank" rel="noreferrer">{e.videoSource ?? e.videoUrl}</a>
-                          </p>
-                        )}
-                        <div className="photo-row">
-                          {photos.map((src, i) => (
-                            <figure key={i}>
-                              {/* eslint-disable-next-line @next/next/no-img-element -- local data URLs */}
-                              <img src={src} alt={`${e.name} photo ${i + 1}`} />
-                              <button type="button" className="link danger small" onClick={() => removePhoto(e.id, i)}>Remove</button>
-                            </figure>
-                          ))}
-                          {photos.length < MAX_PHOTOS && (
-                            <label className="photo-add">
-                              + Add step photo
-                              <input type="file" accept="image/*" multiple onChange={(ev) => { addPhotos(e.id, ev.target.files); ev.target.value = ""; }} />
-                            </label>
-                          )}
-                        </div>
-                        <p className="muted small">Photos replace the drawing on the printed passport. Take them in order: start → end.</p>
-                        {!e.builtin && <button type="button" className="link danger" onClick={() => remove(e.id)}>Delete exercise</button>}
-                      </div>
-                    </details>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                      </span>
+                      <span className="lib-names">
+                        <strong>{e.name}</strong>
+                        {e.pa ? <span lang="pa">{e.pa.name}</span> : <span className="muted small">No Punjabi yet</span>}
+                      </span>
+                      <span className="lib-meta">
+                        <span className="pill quiet">{e.area}</span>
+                        {!e.builtin && <span className="pill custom">custom</span>}
+                        {photos.length > 0 && <span className="pill">{photos.length} photo{photos.length > 1 ? "s" : ""}</span>}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
-        <form className="card form sticky-side" onSubmit={add}>
-          <h2>Add custom exercise</h2>
-          <label>Name<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
-          <label>Body area
-            <input list="areas" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Lower limb" />
-            <datalist id="areas">{areas.map((a) => <option key={a} value={a} />)}</datalist>
-          </label>
-          <label>Steps (one per line)<textarea rows={4} value={steps} onChange={(e) => setSteps(e.target.value)} required /></label>
-          <label>Precautions<textarea rows={3} value={precautions} onChange={(e) => setPrecautions(e.target.value)} required /></label>
-          <label>Default video link (optional)<input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtu.be/…" /></label>
-          <details className="pa-fields">
-            <summary>ਪੰਜਾਬੀ translation (optional)</summary>
-            <label>ਨਾਮ (name)<input lang="pa" value={paName} onChange={(e) => setPaName(e.target.value)} /></label>
-            <label>ਤਰੀਕਾ (steps, one per line)<textarea lang="pa" rows={4} value={paSteps} onChange={(e) => setPaSteps(e.target.value)} /></label>
-            <label>ਸਾਵਧਾਨੀਆਂ (precautions)<textarea lang="pa" rows={2} value={paPrec} onChange={(e) => setPaPrec(e.target.value)} /></label>
-          </details>
-          <p className="muted small">Custom exercises have no drawing — add step photos after saving.</p>
-          <div className="actions"><button className="btn primary" type="submit">Add to library</button></div>
-        </form>
+        <aside id="lib-panel" className="sticky-side" aria-live="polite">
+          {adding || !sel ? (
+            <form className="card form" onSubmit={(e) => { add(e); setAdding(false); }}>
+              <div className="card-head">
+                <h2>Add custom exercise</h2>
+              </div>
+              {!adding && <p className="muted small">Or choose an exercise on the left to see its animation, steps and photos.</p>}
+              <label>Name<input name="name" value={name} onChange={(e) => setName(e.target.value)} required /></label>
+              <label>Body area
+                <input name="area" list="areas" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Lower limb" />
+                <datalist id="areas">{areas.map((a) => <option key={a} value={a} />)}</datalist>
+              </label>
+              <label>Steps<span className="hint">One per line.</span><textarea name="steps" rows={4} value={steps} onChange={(e) => setSteps(e.target.value)} required /></label>
+              <label>Precautions<textarea name="precautions" rows={3} value={precautions} onChange={(e) => setPrecautions(e.target.value)} required /></label>
+              <label>Default video link (optional)<input name="videoUrl" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtu.be/…" /></label>
+              <details className="pa-fields">
+                <summary><span lang="pa">ਪੰਜਾਬੀ</span>&nbsp;translation (optional)</summary>
+                <label><span lang="pa">ਨਾਮ</span> (name)<input lang="pa" value={paName} onChange={(e) => setPaName(e.target.value)} /></label>
+                <label><span lang="pa">ਤਰੀਕਾ</span> (steps, one per line)<textarea lang="pa" rows={4} value={paSteps} onChange={(e) => setPaSteps(e.target.value)} /></label>
+                <label><span lang="pa">ਸਾਵਧਾਨੀਆਂ</span> (precautions)<textarea lang="pa" rows={2} value={paPrec} onChange={(e) => setPaPrec(e.target.value)} /></label>
+                <p className="hint">Have a Punjabi speaker and a physiotherapist check any translation before it reaches patients.</p>
+              </details>
+              <p className="muted small">Custom exercises have no drawing. Add step photos after saving.</p>
+              <div className="actions"><button className="btn primary" type="submit">Add to library</button></div>
+            </form>
+          ) : (
+            <section className="card lib-detail" aria-labelledby="lib-detail-h">
+              <div className="card-head">
+                <div>
+                  <h2 id="lib-detail-h">{sel.name}</h2>
+                  {sel.pa && <p lang="pa" className="muted">{sel.pa.name}</p>}
+                </div>
+                <button type="button" className="btn small" onClick={() => setSelected("")}>Close</button>
+              </div>
+              {sel.builtin && (
+                <div className="lib-figs">
+                  <AnimatedFigure exerciseId={sel.id} height={150} />
+                  <Figure exerciseId={sel.id} height={70} labels={["Start", "End"]} />
+                </div>
+              )}
+              <h3>Steps</h3>
+              <ol className="steps">{sel.steps.map((t, i) => <li key={i}>{t}</li>)}</ol>
+              {sel.pa && <ol className="steps" lang="pa">{sel.pa.steps.map((t, i) => <li key={i}>{t}</li>)}</ol>}
+              <h3>Precautions</h3>
+              <p className="small">{sel.precautions}</p>
+              {sel.pa?.precautions && <p className="small" lang="pa">{sel.pa.precautions}</p>}
+              {sel.videoUrl && (
+                <p className="small">
+                  <strong>Default video:</strong>{" "}
+                  <a href={sel.videoUrl} target="_blank" rel="noreferrer">{sel.videoSource ?? sel.videoUrl}</a>
+                </p>
+              )}
+              <h3>Step photos</h3>
+              <div className="photo-row">
+                {photosOf(sel.id).map((src, i) => (
+                  <figure key={i}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- local data URLs */}
+                    <img src={src} alt={`${sel.name} photo ${i + 1}`} />
+                    <button type="button" className="link danger small" onClick={() => removePhoto(sel.id, i)}>Remove</button>
+                  </figure>
+                ))}
+                {photosOf(sel.id).length < MAX_PHOTOS && (
+                  <label className="photo-add">
+                    Add step photo
+                    <input type="file" accept="image/*" multiple onChange={(ev) => { addPhotos(sel.id, ev.target.files); ev.target.value = ""; }} />
+                  </label>
+                )}
+              </div>
+              <p className="muted small">Photos replace the drawing on the printed passport. Take them in order, from start to end.</p>
+              {!sel.builtin && <button type="button" className="link danger" onClick={() => { remove(sel.id); setSelected(""); }}>Delete exercise</button>}
+            </section>
+          )}
+        </aside>
       </div>
     </>
   );

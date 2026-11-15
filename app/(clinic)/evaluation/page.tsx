@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import Icon from "@/components/Icon";
 import { adherence, findExercise } from "@/lib/logic";
 import { useStore } from "@/lib/store";
 
@@ -9,8 +10,7 @@ function avg(xs: number[]): number | null {
 }
 
 export default function Evaluation() {
-  const { data, update, reset } = useStore();
-  const [clinic, setClinic] = useState(data.clinic);
+  const { data } = useStore();
 
   // 1. Exercise-log completion, per passport version
   const perPassport = data.passports.map((p) => ({
@@ -65,7 +65,7 @@ export default function Evaluation() {
     a.click();
   }
 
-  const fmt = (n: number | null, d = 1) => (n === null ? "—" : n.toFixed(d));
+  const fmt = (n: number | null, d = 1) => (n === null ? "none yet" : n.toFixed(d));
 
   // Safety monitoring: pain reports per passport (first 3 vs last 3 reports).
   const painRows = data.passports.map((p) => {
@@ -82,36 +82,44 @@ export default function Evaluation() {
     };
   });
 
+  const exRows = [...byExercise.entries()]
+    .map(([exId, v]) => ({ exId, name: findExercise(data, exId)?.name ?? "", pct: v.expected ? Math.round((v.done / v.expected) * 100) : 0 }))
+    .sort((a, b) => b.pct - a.pct);
+
   return (
     <>
       <div className="page-head">
         <div>
           <h1>Proposed evaluation</h1>
-          <p className="muted">Feasibility measures from the concept. <strong>No clinical effectiveness is claimed.</strong></p>
+          <p>Feasibility measures from the concept. <strong>No clinical effectiveness is claimed.</strong></p>
+        </div>
+        <div className="head-actions">
+          <button type="button" className="btn" onClick={exportCsv}><Icon name="download" size={18} />Export log (CSV)</button>
+          <button type="button" className="btn" onClick={exportJson}><Icon name="download" size={18} />Export all (JSON)</button>
         </div>
       </div>
 
       <div className="stats">
-        <div className="stat"><span>Exercise-log completion</span><strong>{totExp ? Math.round((totDone / totExp) * 100) : 0}%</strong><small>{totDone} / {totExp} exercise-days</small></div>
-        <div className="stat"><span>Patient usability (1–5)</span><strong>{fmt(ease)}</strong><small>{data.feedback.length} responses</small></div>
-        <div className="stat"><span>Understood instructions</span><strong>{understood === null ? "—" : `${understood}%`}</strong><small>answered “yes”</small></div>
+        <div className="stat"><span>Exercise-log completion</span><strong>{totExp ? Math.round((totDone / totExp) * 100) : 0}%</strong><small>{totDone} of {totExp} exercise-days</small></div>
+        <div className="stat"><span>Patient usability, 1 to 5</span><strong>{fmt(ease)}</strong><small>{data.feedback.length} responses</small></div>
+        <div className="stat"><span>Understood instructions</span><strong>{understood === null ? "None yet" : `${understood}%`}</strong><small>answered yes</small></div>
         <div className="stat"><span>Clinician time</span><strong className="sm">{fmt(setup, 0)} / {fmt(review, 0)} min</strong><small>new passport / review</small></div>
       </div>
 
       <div className="grid2 top">
-        <section className="card">
-          <h2>Completion by passport</h2>
+        <section className="card flush">
+          <div className="card-head"><h2>Completion by passport</h2></div>
           <table className="table">
-            <thead><tr><th>Patient</th><th>Version</th><th>Days</th><th>Completion</th></tr></thead>
+            <thead><tr><th scope="col">Patient</th><th scope="col">Version</th><th scope="col">Days</th><th scope="col">Completion</th></tr></thead>
             <tbody>
               {perPassport.map(({ p, patient, a }) => (
                 <tr key={p.id}>
-                  <td>{patient?.code}</td>
-                  <td>v{p.version}</td>
-                  <td>{p.items.length ? a.expected / p.items.length : 0}</td>
-                  <td>
+                  <td><Link href={`/patients/${p.patientId}`} className="strong-link">{patient?.code}</Link></td>
+                  <td className="num">v{p.version}</td>
+                  <td className="num">{p.items.length ? a.expected / p.items.length : 0}</td>
+                  <td className="col-bar">
                     <div className="bar-row">
-                      <div className="bar"><div style={{ width: `${a.pct ?? 0}%` }} className={(a.pct ?? 0) < 60 ? "low" : ""} /></div>
+                      <div className="bar" aria-hidden="true"><div style={{ width: `${a.pct ?? 0}%` }} className={(a.pct ?? 0) < 60 ? "low" : ""} /></div>
                       <span>{a.pct ?? 0}%</span>
                     </div>
                   </td>
@@ -121,84 +129,46 @@ export default function Evaluation() {
           </table>
         </section>
         <section className="card">
-          <h2>Completion by exercise</h2>
+          <div className="card-head"><h2>Completion by exercise</h2><span className="muted small">All passports</span></div>
+          <ul className="hbars">
+            {exRows.map((r) => (
+              <li key={r.exId}>
+                <span className="hbar-name">{r.name}</span>
+                <span className="bar" aria-hidden="true"><span style={{ width: `${r.pct}%` }} className={r.pct < 60 ? "low" : ""} /></span>
+                <span className="num hbar-val">{r.pct}%</span>
+              </li>
+            ))}
+          </ul>
+          <p className="muted small note">Average time to update an existing plan: {fmt(update_, 0)} min.</p>
+        </section>
+      </div>
+
+      <section className="card flush top-gap">
+        <div className="card-head">
+          <div>
+            <h2>Safety monitoring and channel use</h2>
+            <p className="muted small">Pain is recorded to spot problems early, not to claim the exercises work.</p>
+          </div>
+        </div>
+        <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Exercise</th><th>Completion</th></tr></thead>
+            <thead><tr><th scope="col">Patient</th><th scope="col">Version</th><th scope="col">Pain reports</th><th scope="col">Pain, first 3 to last 3</th><th scope="col">Reports of 7+</th><th scope="col">Ticks from phone</th></tr></thead>
             <tbody>
-              {[...byExercise.entries()].map(([exId, v]) => {
-                const pct = v.expected ? Math.round((v.done / v.expected) * 100) : 0;
-                return (
-                  <tr key={exId}>
-                    <td>{findExercise(data, exId)?.name}</td>
-                    <td>
-                      <div className="bar-row">
-                        <div className="bar"><div style={{ width: `${pct}%` }} className={pct < 60 ? "low" : ""} /></div>
-                        <span>{pct}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {painRows.map(({ p, patient, n, first, last, high, phone, ticks }) => (
+                <tr key={p.id}>
+                  <td>{patient?.code}</td>
+                  <td className="num">v{p.version}</td>
+                  <td className="num">{n}</td>
+                  <td className="num">{n ? `${fmt(first)} to ${fmt(last)}` : <span className="muted">None yet</span>}</td>
+                  <td>{high ? <span className="pill danger">{high}</span> : <span className="num">0</span>}</td>
+                  <td className="num">{ticks ? `${Math.round((phone / ticks) * 100)}%` : <span className="muted">None yet</span>} <span className="muted small">({phone}/{ticks})</span></td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          <p className="muted small">Average time to update an existing plan: {fmt(update_, 0)} min.</p>
-        </section>
-      </div>
-
-      <section className="card">
-        <h2>Safety monitoring &amp; channel use</h2>
-        <p className="muted small">Pain is recorded to spot problems early, not to claim the exercises work.</p>
-        <table className="table">
-          <thead><tr><th>Patient</th><th>Version</th><th>Pain reports</th><th>Pain: first 3 → last 3</th><th>Reports ≥ 7</th><th>Ticks from phone</th></tr></thead>
-          <tbody>
-            {painRows.map(({ p, patient, n, first, last, high, phone, ticks }) => (
-              <tr key={p.id}>
-                <td>{patient?.code}</td>
-                <td>v{p.version}</td>
-                <td>{n}</td>
-                <td>{fmt(first)} → {fmt(last)}</td>
-                <td>{high ? <span className="pill danger">{high}</span> : 0}</td>
-                <td>{ticks ? `${Math.round((phone / ticks) * 100)}%` : "—"} <span className="muted small">({phone}/{ticks})</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        </div>
       </section>
-
-      <div className="grid2 top">
-        <form
-          className="card form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            update((d) => ({ ...d, clinic }));
-          }}
-        >
-          <h2>Clinic details (printed on passports)</h2>
-          <label>Therapist<input value={clinic.therapist} onChange={(e) => setClinic({ ...clinic, therapist: e.target.value })} /></label>
-          <label>Clinic / institution<input value={clinic.clinic} onChange={(e) => setClinic({ ...clinic, clinic: e.target.value })} /></label>
-          <label>Contact phone<input value={clinic.phone} onChange={(e) => setClinic({ ...clinic, phone: e.target.value })} /></label>
-          <div className="actions"><button className="btn primary" type="submit">Save</button></div>
-        </form>
-        <section className="card">
-          <h2>Data</h2>
-          <p className="muted small">Data is stored in the clinic database for your account. Export it for analysis, or replace everything with the demo patients.</p>
-          <div className="row-gap">
-            <button type="button" className="btn" onClick={exportCsv}>Export log (CSV)</button>
-            <button type="button" className="btn" onClick={exportJson}>Export all (JSON)</button>
-            <button
-              type="button"
-              className="btn danger"
-              onClick={() => {
-                if (confirm("Replace all data with the demo patients?")) {
-                  reset();
-                }
-              }}
-            >
-              Reset demo data
-            </button>
-          </div>
-        </section>
-      </div>
+      <p className="muted small note">Clinic details and demo data moved to <Link href="/settings">Clinic settings</Link>.</p>
     </>
   );
 }
