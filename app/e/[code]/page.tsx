@@ -1,4 +1,5 @@
 import { T } from "@/components/Bi";
+import Icon from "@/components/Icon";
 import ExerciseView, { sharedName } from "@/components/ExerciseView";
 import { decodeExercise } from "@/lib/share";
 
@@ -28,7 +29,7 @@ export default async function ExercisePage({ params }: PageProps<"/e/[code]">) {
       </header>
       <div className="patient-card">
         <ExerciseView ex={ex} lang={lang} />
-        <p className="remind"><T lang={lang} k="rememberTick" /></p>
+        <p className="remind"><Icon name="check" size={20} /><span><T lang={lang} k="rememberTick" /></span></p>
       </div>
     </main>
   );

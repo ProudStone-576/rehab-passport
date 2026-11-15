@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FrameSvg, H, W, ACCENT, propEl } from "@/components/Figure";
+import Icon from "@/components/Icon";
 import { animate, holdFromText } from "@/lib/animation";
 import { FIGURES } from "@/lib/figures";
 import { dict, langs } from "@/lib/i18n";
@@ -69,14 +70,14 @@ export default function AnimatedFigure({
         </g>
       </svg>
       <div className="anim-bar">
-        <span className="anim-rep" lang={l0}>{d.rep} <strong>{s.rep}</strong> / {reps}</span>
+        <span className="anim-rep" lang={l0}>{d.rep} <strong key={s.rep} className="pop">{s.rep}</strong> / {reps}</span>
         <span className="anim-phase" lang={l0}>{d[PHASE_KEY[s.phase]]}</span>
         <span className="grow" />
-        <button type="button" className="btn small" onClick={() => setSlow(!slow)} aria-pressed={slow} lang={l0}>
+        <button type="button" className="btn small anim-btn" onClick={() => setSlow(!slow)} aria-pressed={slow} lang={l0}>
           {slow ? d.normalSpeed : d.slowSpeed}
         </button>
-        <button type="button" className="btn small" onClick={() => setPlaying(!playing)} aria-label={playing ? d.pause : d.play} lang={l0}>
-          {playing ? `❚❚ ${d.pause}` : `▶ ${d.play}`}
+        <button type="button" className="btn small anim-btn" onClick={() => setPlaying(!playing)} lang={l0}>
+          <Icon name={playing ? "pause" : "play"} size={16} />{playing ? d.pause : d.play}
         </button>
       </div>
     </div>

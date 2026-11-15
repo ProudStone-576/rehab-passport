@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Icon from "@/components/Icon";
 import { dict, langs } from "@/lib/i18n";
 import type { Lang } from "@/lib/types";
 
@@ -49,8 +50,9 @@ export default function Listen({ lang, texts }: { lang: Lang; texts: Record<"en"
 
   return (
     <div className="listen">
-      <button type="button" className={speaking ? "btn listen-btn on" : "btn listen-btn"} onClick={speak}>
-        {speaking ? dict(first).stop : dict(first).listen}
+      <button type="button" className={speaking ? "btn listen-btn on" : "btn listen-btn"} aria-pressed={speaking} onClick={speak}>
+        <Icon name={speaking ? "pause" : "sound"} size={18} />
+        <span lang={first}>{speaking ? dict(first).stop : dict(first).listen}</span>
       </button>
       {note && <small className="muted">{note}</small>}
     </div>

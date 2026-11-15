@@ -3,6 +3,7 @@
 .patient { min-height: 100vh; background: var(--color-paper); padding-bottom: var(--space-2xl); font-size: var(--text-lg); line-height: 1.5; }
 .patient-band { background: var(--color-navy); color: var(--color-on-dark); padding: var(--space-md) var(--space-md) var(--space-xl); }
 .patient-band > * { max-width: var(--patient-max); margin-left: auto; margin-right: auto; }
+.patient-band .code { color: var(--color-on-dark); margin-left: var(--space-2xs); font-variant-numeric: tabular-nums; }
 .patient-band small { display: block; color: var(--color-on-dark-accent); font-weight: 600; font-size: var(--text-sm); }
 .patient-band h1 { color: var(--color-on-dark); font-size: var(--text-3xl); margin: var(--space-2xs) auto 0; letter-spacing: -0.02em; }
 .patient-card { background: var(--color-surface); max-width: var(--patient-max); margin: calc(-1 * var(--space-md)) auto 0; border-radius: var(--radius-big); padding: var(--space-lg) var(--space-md); box-shadow: var(--shadow-card); position: relative; }
@@ -34,38 +35,55 @@ h1 .bi-en, .patient-band .bi-en, .visit-card .bi-en, .period-progress .bi-en { c
 .band-date { color: var(--color-on-dark-muted); margin: var(--space-2xs) auto 0; }
 
 /* dose, steps, safety */
+.block-btn svg { width: 22px; height: 22px; }
 .block-btn { width: 100%; justify-content: center; min-height: var(--touch-big); font-size: var(--text-lg); margin-bottom: var(--space-md); }
 .dose-box { background: var(--color-mint); border: 1px solid var(--color-mint-2); border-radius: var(--radius-card); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-md); }
 .dose-box small { display: block; color: var(--color-accent-strong); font-weight: 600; font-size: var(--text-sm); }
 .dose-box strong { font-size: var(--text-xl); color: var(--color-navy); }
 .steps.big li { margin-bottom: var(--space-sm); line-height: 1.5; }
 .stop-box { background: var(--color-warn-soft); border: 1.5px solid var(--color-warn); border-radius: var(--radius-card); padding: var(--space-sm) var(--space-md); margin: var(--space-md) 0; }
-.stop-box strong { color: var(--color-warn); }
+.stop-box strong { color: var(--color-warn); display: block; }
+.stop-box strong > svg { display: inline-block; vertical-align: -3px; margin-right: var(--space-2xs); }
 .stop-box p { margin: var(--space-2xs) 0 0; }
-.remind { text-align: center; color: var(--color-accent-strong); font-weight: 650; margin-top: var(--space-md); }
+.patient-card > .exview:first-child { border-top: 0; padding-top: 0; }
+.remind { display: flex; gap: var(--space-xs); justify-content: center; align-items: flex-start; text-align: left; color: var(--color-accent-strong); font-weight: 650; margin-top: var(--space-md); }
 .px-note { background: var(--color-paper); border-radius: var(--radius-sm); padding: var(--space-xs) var(--space-sm); }
 .listen { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); flex-wrap: wrap; }
-.listen-btn { font-size: var(--text-md); min-height: var(--hit); }
+.listen-btn { font-size: var(--text-md); min-height: var(--touch-big); padding: 0 var(--space-lg); }
 .listen-btn.on { background: var(--color-navy); color: var(--color-on-dark); border-color: var(--color-navy); }
 
-/* today's list */
-.all-done { background: var(--color-ok-soft); color: var(--color-ok); border-radius: var(--radius-card); padding: var(--space-sm) var(--space-md); font-weight: 700; margin-bottom: var(--space-sm); text-align: center; }
+/* today's list: one card per exercise, Mark done is the main action */
+.all-done { display: flex; align-items: center; justify-content: center; gap: var(--space-xs); background: var(--color-ok-soft); color: var(--color-ok); border-radius: var(--radius-card); padding: var(--space-sm) var(--space-md); font-weight: 700; margin-bottom: var(--space-sm); text-align: center; animation: pop-in var(--dur-short) var(--ease-out); }
 .today-list { list-style: none; padding: 0; margin: 0 0 var(--space-lg); display: grid; gap: var(--space-sm); }
-.today-list > li { border: 1.5px solid var(--color-rule); border-radius: var(--radius-card); padding: var(--space-sm); transition: border-color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out); }
+.today-list > li { border: 1.5px solid var(--color-rule); border-radius: var(--radius-big); padding: var(--space-sm); display: grid; gap: var(--space-sm); background: var(--color-surface); transition: border-color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out); }
 .today-list > li.done { border-color: var(--color-teal); background: var(--color-mint); }
 .today-row { display: flex; align-items: center; gap: var(--space-sm); }
-.mini-fig { flex: none; width: 72px; background: var(--color-paper); border-radius: var(--radius-control); }
-.mini-fig .figure { height: 62px; width: auto; }
+.today-text { display: grid; gap: var(--space-2xs); min-width: 0; }
+.ex-title { font-size: var(--text-xl); line-height: 1.25; color: var(--color-navy); }
+.ex-title .bi-en { font-size: 0.72em; }
+.ex-dose { color: var(--color-ink-2); font-size: var(--text-md); }
+.ex-dose .bi-en { font-size: 0.9em; }
+.mini-fig { flex: none; width: 104px; background: var(--color-paper); border-radius: var(--radius-control); display: grid; place-items: center; padding: var(--space-2xs); }
+.today-list > li.done .mini-fig { background: var(--color-surface); }
+.mini-fig .figure { height: 84px; width: auto; }
+.today-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-xs); }
 .tick-btn {
-  flex: none; width: 80px; min-height: 80px; border-radius: var(--radius-big); border: 2px solid var(--color-rule-strong); background: var(--color-surface);
-  color: var(--color-accent-strong); font-weight: 700; font-size: var(--text-sm); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; padding: var(--space-xs);
-  transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+  display: flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: var(--touch-big); padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-card); border: 2px solid var(--color-accent-strong); background: var(--color-surface); color: var(--color-accent-strong);
+  font-weight: 700; font-size: var(--text-lg); line-height: 1.2; cursor: pointer; text-align: left;
+  transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
 }
-.tick-btn span { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-2xs); font-weight: 600; }
-.tick-btn:active { transform: scale(0.96); }
-.tick-btn.on { background: var(--color-accent-strong); border-color: var(--color-accent-strong); color: var(--color-on-dark); }
-.tick-btn.on span { color: var(--color-mint); }
-.exview { margin-top: var(--space-md); border-top: 1px dashed var(--color-rule-strong); padding-top: var(--space-md); }
+.tick-mark { flex: none; width: 28px; height: 28px; border-radius: var(--radius-sm); border: 2px solid currentColor; display: grid; place-items: center; }
+.tick-label .bi-en { color: inherit; opacity: 0.85; font-size: 0.78em; }
+.tick-btn:hover { background: var(--color-mint); }
+.tick-btn:active { transform: scale(0.98); }
+.tick-btn.on { background: var(--color-accent-strong); color: var(--color-on-dark); }
+.tick-btn.on .tick-mark { background: var(--color-on-dark); color: var(--color-accent-strong); border-color: var(--color-on-dark); animation: pop-in var(--dur-short) var(--ease-out); }
+.steps-btn { min-height: var(--touch-big); font-size: var(--text-md); padding: 0 var(--space-md); white-space: normal; text-align: left; }
+.steps-btn .bi-en { font-size: 0.8em; }
+@keyframes pop-in { from { transform: scale(0.6); opacity: 0; } }
+@media (max-width: 24rem) { .today-actions { grid-template-columns: minmax(0, 1fr); } .mini-fig { width: 84px; } }
+.exview { border-top: 1px dashed var(--color-rule-strong); padding-top: var(--space-md); }
 
 /* week / period dots */
 .week { margin: var(--space-xs) 0 var(--space-md); }
@@ -98,7 +116,9 @@ h1 .bi-en, .patient-band .bi-en, .visit-card .bi-en, .period-progress .bi-en { c
 
 /* pain buttons */
 .pain-card { background: var(--color-paper); border-radius: var(--radius-card); padding: var(--space-md); margin-bottom: var(--space-md); }
+.pain-card h2 { font-size: var(--text-xl); margin-bottom: var(--space-sm); }
 .pain-buttons { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: var(--space-2xs); }
+@media (max-width: 40rem) { .pain-buttons { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-xs); } .pain-buttons button { min-height: 52px; font-size: var(--text-lg); } }
 .pain-buttons button { min-height: var(--hit); border-radius: var(--radius-control); border: 1.5px solid var(--color-rule); font-weight: 700; font-size: var(--text-md); cursor: pointer; padding: 0; color: var(--color-navy); font-variant-numeric: tabular-nums; transition: transform var(--dur-micro) var(--ease-out); }
 .pain-buttons .lvl1 { background: var(--color-ok-soft); }
 .pain-buttons .lvl2 { background: var(--color-caution-soft); }
@@ -108,9 +128,16 @@ h1 .bi-en, .patient-band .bi-en, .visit-card .bi-en, .period-progress .bi-en { c
 
 /* animated figure */
 .anim-box { flex-direction: column; align-items: stretch; }
-.anim-title { font-size: var(--text-sm); font-weight: 600; color: var(--color-accent-strong); margin: 0 0 var(--space-xs); }
+.anim-box { border: 1px solid var(--color-mint-2); background: var(--color-mint); }
+.anim-title { font-size: var(--text-md); font-weight: 600; color: var(--color-accent-strong); margin: 0 0 var(--space-xs); }
 .anim { display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); width: 100%; }
+.sk-band { height: 120px; max-width: var(--patient-max); margin: 0 auto; background: var(--color-blue); }
 .anim-svg { max-width: 100%; height: auto; background: var(--color-surface); border-radius: var(--radius-control); }
 .anim-bar { display: flex; align-items: center; gap: var(--space-xs); width: 100%; flex-wrap: wrap; font-size: var(--text-sm); }
+.anim-btn { min-height: var(--hit); font-size: var(--text-sm); }
+.anim-btn[aria-pressed="true"] { background: var(--color-navy); color: var(--color-on-dark); border-color: var(--color-navy); }
+.anim-rep .pop { display: inline-block; animation: pop-in var(--dur-short) var(--ease-out); }
 .anim-rep strong { font-size: var(--text-lg); color: var(--color-navy); font-variant-numeric: tabular-nums; }
 .anim-phase { color: var(--color-accent-strong); font-weight: 600; }
+
+.remind svg { flex: none; margin-top: 3px; }

@@ -1,4 +1,5 @@
 import AnimatedFigure from "@/components/AnimatedFigure";
+import Icon from "@/components/Icon";
 import Listen from "@/components/Listen";
 import { Pair, T } from "@/components/Bi";
 import { doseIn, exName, exPrecautions, exSteps, langs } from "@/lib/i18n";
@@ -32,12 +33,10 @@ export default function ExerciseView({ ex, lang, video = true }: { ex: SharedExe
   const ls = langs(lang);
   return (
     <div className="exview">
-      <Listen lang={lang} texts={{ en: spoken(ex, "en"), pa: spoken(ex, "pa") }} />
-
       {ex.id && (
         <div className="figure-box anim-box">
           <h3 className="anim-title"><T lang={lang} k="animTitle" /></h3>
-          <AnimatedFigure exerciseId={ex.id} reps={ex.reps ?? 10} hold={ex.hold} lang={lang} />
+          <AnimatedFigure exerciseId={ex.id} reps={ex.reps ?? 10} hold={ex.hold} lang={lang} height={230} />
         </div>
       )}
 
@@ -48,20 +47,7 @@ export default function ExerciseView({ ex, lang, video = true }: { ex: SharedExe
         </div>
       ) : null}
 
-      {video &&
-        (embed ? (
-          <>
-            {ex.id && <h3 className="anim-title"><T lang={lang} k="realVideo" /></h3>}
-            <div className="video">
-              <iframe src={embed} title={`${ex.name} demonstration`} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" />
-            </div>
-            {ex.videoSource && <p className="credit"><T lang={lang} k="videoCredit" /> {ex.videoSource}</p>}
-          </>
-        ) : ex.videoUrl ? (
-          <a className="btn primary block-btn" href={ex.videoUrl} target="_blank" rel="noreferrer"><T lang={lang} k="watch" /></a>
-        ) : (
-          <p className="muted small"><T lang={lang} k="noVideo" /></p>
-        ))}
+      <Listen lang={lang} texts={{ en: spoken(ex, "en"), pa: spoken(ex, "pa") }} />
 
       <div className="dose-box">
         <small><T lang={lang} k="yourDose" /></small>
@@ -85,6 +71,21 @@ export default function ExerciseView({ ex, lang, video = true }: { ex: SharedExe
           </p>
         ))}
       </div>
+
+      {video &&
+        (embed ? (
+          <>
+            {ex.id && <h3 className="anim-title"><T lang={lang} k="realVideo" /></h3>}
+            <div className="video">
+              <iframe src={embed} title={`${ex.name} demonstration`} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" />
+            </div>
+            {ex.videoSource && <p className="credit"><T lang={lang} k="videoCredit" /> {ex.videoSource}</p>}
+          </>
+        ) : ex.videoUrl ? (
+          <a className="btn block-btn" href={ex.videoUrl} target="_blank" rel="noreferrer"><Icon name="play" /><T lang={lang} k="watch" /></a>
+        ) : (
+          <p className="muted small"><T lang={lang} k="noVideo" /></p>
+        ))}
     </div>
   );
 }

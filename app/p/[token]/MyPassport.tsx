@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { T } from "@/components/Bi";
 import ExerciseView, { sharedDose, sharedName } from "@/components/ExerciseView";
 import Figure from "@/components/Figure";
+import Icon from "@/components/Icon";
 import { dict, fmtDateIn, langs } from "@/lib/i18n";
 import { dateKey, daysBetween, fmtTime, parseKey } from "@/lib/logic";
 import type { PhonePost, PhoneView } from "@/lib/phone";
@@ -68,7 +69,19 @@ export default function MyPassport({ token }: { token: string }) {
       </main>
     );
   }
-  if (!view || !today) return <main className="patient"><p className="loading">…</p></main>;
+  if (!view || !today) {
+    return (
+      <main className="patient" aria-busy="true">
+        <header className="patient-band"><div className="sk sk-band" /></header>
+        <div className="patient-card skeleton">
+          {error ? <p className="err center"><T lang="both" k="offline" /></p> : null}
+          <div className="sk sk-row" />
+          <div className="sk sk-row" />
+          <div className="sk sk-row" />
+        </div>
+      </main>
+    );
+  }
 
   const v = view;
   const n = v.items.length;
@@ -119,10 +132,10 @@ export default function MyPassport({ token }: { token: string }) {
     <main className="patient">
       <header className="patient-band">
         <div className="band-row">
-          <small><T lang={lang} k="brand" /> · {v.code}</small>
+          <small><T lang={lang} k="brand" /> <span className="code">{v.code}</span></small>
           <div className="lang-toggle" role="group" aria-label="Language">
             {(["pa", "both", "en"] as Lang[]).map((l) => (
-              <button key={l} type="button" className={l === lang ? "on" : ""} onClick={() => chooseLang(l)}>
+              <button key={l} type="button" className={l === lang ? "on" : ""} aria-pressed={l === lang} lang={l === "pa" ? "pa" : undefined} onClick={() => chooseLang(l)}>
                 {l === "pa" ? "ਪੰਜਾਬੀ" : l === "en" ? "English" : "ਦੋਵੇਂ / Both"}
               </button>
             ))}
@@ -133,7 +146,7 @@ export default function MyPassport({ token }: { token: string }) {
       </header>
 
       <div className="patient-card">
-        {error && <p className="err center"><T lang={lang} k="offline" /></p>}
+        {error && <p className="err center" role="alert"><T lang={lang} k="offline" /></p>}
 
         <section className={daysLeft < 0 ? "visit-card overdue" : "visit-card"}>
           <small><T lang={lang} k="nextVisitIn" /></small>
@@ -153,7 +166,7 @@ export default function MyPassport({ token }: { token: string }) {
               const cls = d > today ? "dot future" : c >= n ? "dot full" : c > 0 ? "dot part" : "dot";
               return (
                 <div key={d} className={d === today ? "week-day now" : "week-day"} title={d}>
-                  <span className={d === v.visit ? `${cls} visit` : cls}>{d === v.visit ? "📅" : c >= n && d <= today ? "✓" : ""}</span>
+                  <span className={d === v.visit ? `${cls} visit` : cls}>{d === v.visit ? <Icon name="calendar" size={14} /> : c >= n && d <= today ? <Icon name="check" size={14} /> : ""}</span>
                   <small lang={l0}>{fmtDateIn(parseKey(d), l0, "short-weekday").slice(0, 3)}</small>
                 </div>
               );
@@ -161,7 +174,7 @@ export default function MyPassport({ token }: { token: string }) {
           </div>
         </section>
 
-        {doneOn(today) >= n && <div className="all-done"><T lang={lang} k="allDone" /></div>}
+        {doneOn(today) >= n && <div className="all-done" role="status"><Icon name="check" /><T lang={lang} k="allDone" /></div>}
 
         <ul className="today-list">
           {v.items.map((ex, i) => {
@@ -169,17 +182,20 @@ export default function MyPassport({ token }: { token: string }) {
             return (
               <li key={ex.itemId} className={on ? "done" : ""}>
                 <div className="today-row">
-                  {ex.id && <div className="mini-fig"><Figure exerciseId={ex.id} height={60} frame={1} /></div>}
-                  <div className="grow">
-                    <strong>{sharedName(ex, lang)}</strong>
-                    <div className="small muted">{sharedDose(ex, lang)}</div>
-                    <button type="button" className="link small" onClick={() => setOpen(open === i ? null : i)}>
-                      <T lang={lang} k={open === i ? "hideSteps" : "showSteps"} />
-                    </button>
+                  {ex.id && <div className="mini-fig"><Figure exerciseId={ex.id} height={84} frame={1} /></div>}
+                  <div className="grow today-text">
+                    <strong className="ex-title">{sharedName(ex, lang)}</strong>
+                    <div className="ex-dose">{sharedDose(ex, lang)}</div>
                   </div>
+                </div>
+                <div className="today-actions">
                   <button type="button" className={on ? "tick-btn on" : "tick-btn"} onClick={() => toggle(ex.itemId)} aria-pressed={on}>
-                    {on ? "✓" : ""}
-                    <span><T lang={lang} k={on ? "done" : "markDone"} /></span>
+                    <span className="tick-mark" aria-hidden="true">{on ? <Icon name="check" size={24} /> : null}</span>
+                    <span className="tick-label"><T lang={lang} k={on ? "done" : "markDone"} /></span>
+                  </button>
+                  <button type="button" className="btn steps-btn" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
+                    <Icon name={open === i ? "close" : "play"} size={18} />
+                    <T lang={lang} k={open === i ? "hideSteps" : "showSteps"} />
                   </button>
                 </div>
                 {open === i && <ExerciseView ex={ex} lang={lang} />}
@@ -196,6 +212,7 @@ export default function MyPassport({ token }: { token: string }) {
                 key={s}
                 type="button"
                 className={`${painToday === s ? "on" : ""} lvl${s >= 7 ? 3 : s >= 4 ? 2 : 1}`}
+                aria-pressed={painToday === s}
                 onClick={() => setPain(painToday === s ? null : s)}
               >
                 {s}
@@ -203,18 +220,18 @@ export default function MyPassport({ token }: { token: string }) {
             ))}
           </div>
           <div className="pain-ends small muted"><T lang={lang} k="painNone" /><T lang={lang} k="painWorst" /></div>
-          {painToday !== null && painToday >= 7 && <p className="stop-box"><T lang={lang} k="painHigh" /></p>}
+          {painToday !== null && painToday >= 7 && <p className="stop-box" role="alert"><T lang={lang} k="painHigh" /></p>}
         </section>
 
         {v.phone && (
-          <a className="btn block-btn" href={`tel:${v.phone.replace(/[^\d+]/g, "")}`}>📞 <T lang={lang} k="callTherapist" /></a>
+          <a className="btn block-btn" href={`tel:${v.phone.replace(/[^\d+]/g, "")}`}><Icon name="phone" /><T lang={lang} k="callTherapist" /> <span className="num">{v.phone}</span></a>
         )}
 
-        <div className="stop-box">
-          <strong><T lang={lang} k="stopTitle" /></strong>
+        <div className="stop-box" role="note">
+          <strong><Icon name="alert" size={18} /><T lang={lang} k="stopTitle" /></strong>
           <p><T lang={lang} k="stopBody" /></p>
         </div>
-        <p className="muted small center">{v.therapist} · {v.clinic}</p>
+        <p className="muted small center">{v.therapist}{v.clinic ? `, ${v.clinic}` : ""}</p>
       </div>
     </main>
   );
