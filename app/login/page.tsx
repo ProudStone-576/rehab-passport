@@ -24,48 +24,67 @@ export default function Login() {
 
   return (
     <main className="login">
-      <div className="login-card">
-        <div className="brand dark">
-          <span className="brand-mark">RP</span>
+      <section className="login-side" aria-label="About Rehab Passport">
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true">RP</span>
           <span>
             <strong>Rehab Passport</strong>
             <small>QR-assisted home exercise support</small>
           </span>
         </div>
-
-        <div className="tabs">
-          <button type="button" className={mode === "in" ? "on" : ""} onClick={() => setMode("in")}>Sign in</button>
-          <button type="button" className={mode === "up" ? "on" : ""} onClick={() => setMode("up")}>Create account</button>
+        <div>
+          <h1>A paper passport for home exercises</h1>
+          <p lang="pa" className="pa-line">ਰੀਹੈਬ ਪਾਸਪੋਰਟ</p>
+          <p>Patients follow their exercises on paper or on their phone. You see their ticks and pain before the next visit.</p>
         </div>
+        <ol className="login-steps">
+          <li><b>Assess</b>Pick exercises from the library.</li>
+          <li><b>Personalize</b>Sets, reps and safety advice.</li>
+          <li><b>Demonstrate</b>Printed pictures and a QR demo.</li>
+          <li><b>Track</b>Daily ticks and a pain score.</li>
+          <li><b>Review</b>Check progress at the next visit.</li>
+        </ol>
+      </section>
 
-        <form
-          className="form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            post(mode === "in" ? "/api/auth/login" : "/api/auth/register", form);
-          }}
-        >
-          {mode === "up" && (
-            <>
-              <label>Your name<input value={form.name} onChange={set("name")} required autoComplete="name" /></label>
-              <label>Clinic / institution<input value={form.clinic} onChange={set("clinic")} /></label>
-            </>
-          )}
-          <label>Email<input type="email" value={form.email} onChange={set("email")} required autoComplete="email" /></label>
-          <label>
-            Password
-            <input type="password" value={form.password} onChange={set("password")} required minLength={mode === "up" ? 8 : undefined}
-              autoComplete={mode === "in" ? "current-password" : "new-password"} />
-          </label>
-          {error && <p className="err">{error}</p>}
-          <button className="btn primary" type="submit" disabled={busy}>{mode === "in" ? "Sign in" : "Create account"}</button>
-        </form>
+      <div className="login-main">
+        <div className="login-card">
+          <h2>{mode === "in" ? "Sign in to your clinic" : "Create a clinic account"}</h2>
 
-        <div className="or"><span>or</span></div>
-        <button type="button" className="btn block-btn" disabled={busy} onClick={() => post("/api/auth/demo")}>
-          Open demo clinic
-        </button>
-        <p className="muted small center">Shared demo with made-up patients — anyone can edit it. Use your own account for real work.</p>
+          <div className="tabs" role="group" aria-label="Account">
+            <button type="button" aria-pressed={mode === "in"} className={mode === "in" ? "on" : ""} onClick={() => setMode("in")}>Sign in</button>
+            <button type="button" aria-pressed={mode === "up"} className={mode === "up" ? "on" : ""} onClick={() => setMode("up")}>Create account</button>
+          </div>
+
+          <form
+            className="form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              post(mode === "in" ? "/api/auth/login" : "/api/auth/register", form);
+            }}
+          >
+            {mode === "up" && (
+              <>
+                <label>Your name<input name="name" value={form.name} onChange={set("name")} required autoComplete="name" /></label>
+                <label>Clinic or institution<input name="clinic" value={form.clinic} onChange={set("clinic")} autoComplete="organization" /></label>
+              </>
+            )}
+            <label>Email<input name="email" type="email" value={form.email} onChange={set("email")} required autoComplete="email" inputMode="email" /></label>
+            <label>
+              Password
+              <input name="password" type="password" value={form.password} onChange={set("password")} required minLength={mode === "up" ? 8 : undefined}
+                autoComplete={mode === "in" ? "current-password" : "new-password"} />
+              {mode === "up" && <span className="hint">At least 8 characters.</span>}
+            </label>
+            {error && <p className="err" role="alert">{error}</p>}
+            <button className="btn primary" type="submit" disabled={busy}>{busy ? "Please wait…" : mode === "in" ? "Sign in" : "Create account"}</button>
+          </form>
+
+          <div className="or">or</div>
+          <button type="button" className="btn" disabled={busy} onClick={() => post("/api/auth/demo")}>
+            Open demo clinic
+          </button>
+          <p className="muted small center">Shared demo with made-up patients. Anyone can edit it, so use your own account for real work.</p>
+        </div>
       </div>
     </main>
   );
