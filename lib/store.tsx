@@ -97,7 +97,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   if (!state) {
-    return <div className="loading">{error || "Loading…"}</div>;
+    // Loading: a skeleton in the shape of the shell. Error: what broke and a retry.
+    if (error) {
+      return (
+        <div className="loading" role="alert">
+          <p>{error}</p>
+          <button type="button" className="btn" onClick={() => location.reload()}>Try again</button>
+        </div>
+      );
+    }
+    return (
+      <div className="shell" aria-busy="true" aria-label="Loading the clinic">
+        <div className="sidebar no-print" />
+        <div className="page skeleton">
+          <div className="sk sk-title" />
+          <div className="sk sk-row" />
+          <div className="sk sk-block" />
+        </div>
+      </div>
+    );
   }
   return (
     <Ctx.Provider value={{ data: state.data, me: state.me, update, reset, refresh, saving }}>

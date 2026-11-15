@@ -1,0 +1,92 @@
+/* Rehab Passport design tokens. Every colour, font, size and motion value in the
+   app comes from here; components never use a literal. Brand palette from the
+   redesign brief (navy #101D35, blue #193C56, teal #159E91, mint #E8F4F1,
+   background #F5F7FA). Teal text and filled buttons use --color-accent-strong,
+   a deeper step of the same teal, because #159E91 under white text is 3.3:1. */
+:root {
+  /* brand */
+  --color-navy: #101d35;
+  --color-blue: #193c56;
+  --color-teal: #159e91;
+  --color-accent-strong: #0d776d;
+  --color-accent-press: #0a5f57;
+  --color-mint: #e8f4f1;
+  --color-mint-2: #d3ebe5;
+
+  /* surfaces and ink */
+  --color-paper: #f5f7fa;
+  --color-paper-2: #eef2f6;
+  --color-surface: #ffffff;
+  --color-ink: #101d35;
+  --color-ink-2: #2b3950;
+  --color-muted: #5b6779;
+  --color-rule: #e1e7ee;
+  --color-rule-strong: #c9d3de;
+  --color-on-dark: #ffffff;
+  --color-on-dark-muted: #afc0d3;
+  --color-on-dark-accent: #5fd3c6;
+  --color-focus: #0d776d;
+  --color-focus-on-dark: #5fd3c6;
+
+  /* states (semantic, separate from the accent) */
+  --color-warn: #b54708;
+  --color-warn-soft: #fff3e8;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdeceb;
+  --color-ok: #1e6b3a;
+  --color-ok-soft: #e7f5ec;
+  --color-caution-soft: #fff6db;
+  --color-phone: #193c56;
+
+  /* print-only neutrals */
+  --color-print-desk: #c9d3dc;
+  --color-print-line: #8e9cab;
+
+  /* type: one family, Punjabi glyphs from Noto Sans Gurmukhi */
+  --font-body: var(--font-inter), "Inter", system-ui, -apple-system, "Segoe UI", Roboto, var(--font-gurmukhi), sans-serif;
+  --font-pa: var(--font-gurmukhi), "Noto Sans Gurmukhi", var(--font-inter), sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  /* type scale, ratio 1.2 from 15px (clinic) */
+  --text-xs: 0.8125rem;   /* 13px, the smallest text in the app */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-md: 0.9375rem;   /* 15px body (clinic) */
+  --text-lg: 1.125rem;    /* 18px, patient body */
+  --text-xl: 1.35rem;     /* 21.6px */
+  --text-2xl: 1.625rem;   /* 26px */
+  --text-3xl: 1.95rem;    /* 31px */
+  --text-4xl: 2.35rem;    /* 37.6px, patient day heading */
+
+  /* spacing, 4px scale */
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px;
+  --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px; --space-3xl: 64px;
+
+  /* shape */
+  --radius-sm: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-big: 16px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgb(16 29 53 / 0.05), 0 1px 1px rgb(16 29 53 / 0.03);
+  --shadow-raised: 0 8px 24px rgb(16 29 53 / 0.12), 0 2px 6px rgb(16 29 53 / 0.06);
+  --shadow-sheet: 0 2px 12px rgb(16 29 53 / 0.16);
+
+  /* controls */
+  --control-h: 40px;
+  --control-h-sm: 32px;
+  --hit: 44px;
+  --touch-big: 56px;
+
+  /* layout */
+  --sidebar-w: 248px;
+  --content-max: 1200px;
+  --patient-max: 640px;
+
+  /* motion: state only, never decoration */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+
+  --z-sticky: 200; --z-nav: 300; --z-modal: 400; --z-toast: 500;
+  color-scheme: light;
+}
