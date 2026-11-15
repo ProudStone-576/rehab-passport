@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Pair, T } from "@/components/Bi";
 import Figure from "@/components/Figure";
+import Icon from "@/components/Icon";
 import Qr from "@/components/Qr";
 import { dict, doseIn, exName, exPrecautions, exSteps, fmtDateIn, langs } from "@/lib/i18n";
 import { activePassport, addDays, findExercise, fmtTime, parseKey, visitPeriod } from "@/lib/logic";
@@ -20,7 +21,17 @@ export default function PrintPassport({ id }: { id: string }) {
 
   const patient = data.patients.find((p) => p.id === id);
   const p = activePassport(data, id);
-  if (!patient || !p) return <p>No active passport. <Link href={`/patients/${id}`}>Back</Link></p>;
+  if (!patient || !p) {
+    return (
+      <div className="page">
+        <div className="card empty">
+          <strong>No active passport to print</strong>
+          <span>Create the patient&apos;s plan first.</span>
+          <Link href={`/patients/${id}`} className="btn">Back to the patient</Link>
+        </div>
+      </div>
+    );
+  }
 
   const lang = patient.language;
   const ls = langs(lang);
@@ -43,13 +54,13 @@ export default function PrintPassport({ id }: { id: string }) {
   return (
     <div className="print-root">
       <div className="print-toolbar no-print">
-        <Link href={`/patients/${id}`} className="btn">← Back</Link>
+        <Link href={`/patients/${id}`} className="btn"><Icon name="back" size={18} />Back</Link>
         <span className="grow muted small">
-          A4 · {lang === "en" ? "English" : lang === "pa" ? "Punjabi" : "Punjabi + English"} · Print or “Save as PDF”.{" "}
-          {isLocal && "QR codes point to localhost — open the live site so phones can scan them."}
+          A4, {lang === "en" ? "English" : lang === "pa" ? "Punjabi" : "Punjabi and English"}. Print it, or choose Save as PDF in the print window.{" "}
+          {isLocal && "QR codes point to localhost: open the live site so phones can scan them."}
         </span>
-        {phoneLink && <a className="btn" href={phoneLink} target="_blank" rel="noreferrer">📱 Patient view</a>}
-        <button className="btn primary" type="button" onClick={() => window.print()}>🖨 Print</button>
+        {phoneLink && <a className="btn" href={phoneLink} target="_blank" rel="noreferrer"><Icon name="phone" size={18} />Patient view</a>}
+        <button className="btn primary" type="button" onClick={() => window.print()}><Icon name="print" size={18} />Print</button>
       </div>
 
       {/* Cover */}
@@ -64,7 +75,7 @@ export default function PrintPassport({ id }: { id: string }) {
             <div><dt><T lang={lang} k="therapist" /></dt><dd>{data.clinic.therapist}</dd></div>
             <div><dt><T lang={lang} k="clinic" /></dt><dd>{data.clinic.clinic}</dd></div>
             {data.clinic.phone && <div><dt><T lang={lang} k="phone" /></dt><dd>{data.clinic.phone}</dd></div>}
-            <div><dt><T lang={lang} k="planVersion" /></dt><dd>v{p.version} · <T lang={lang} k="started" /> {fmt(p.startDate)}</dd></div>
+            <div><dt><T lang={lang} k="planVersion" /></dt><dd>v{p.version}, <T lang={lang} k="started" /> {fmt(p.startDate)}</dd></div>
             <div className="visit-fact"><dt><T lang={lang} k="nextReview" /></dt><dd>{fmt(review)}{visitTime && `, ${visitTime}`}</dd></div>
           </dl>
 
@@ -100,7 +111,7 @@ export default function PrintPassport({ id }: { id: string }) {
 
       {/* Exercise pages, matching the poster's prototype columns */}
       <section className="sheet">
-        <h2 className="sheet-title"><T lang={lang} k="myExercises" /> <span>{patient.code} · v{p.version}</span></h2>
+        <h2 className="sheet-title"><T lang={lang} k="myExercises" /> <span>{patient.code}, v{p.version}</span></h2>
         {items.map(({ item: it, ex }, n) => {
           const photos = data.photos[ex.id] ?? [];
           return (
@@ -114,7 +125,7 @@ export default function PrintPassport({ id }: { id: string }) {
                       {photos.map((src, i) => <img key={i} src={src} alt={`${ex.name} step ${i + 1}`} />)}
                     </div>
                   ) : (
-                    <Figure exerciseId={ex.id} height={78} />
+                    <div className="px-fig"><Figure exerciseId={ex.id} height={104} /></div>
                   )}
                   {ls.map((l) => (
                     <ol key={l} lang={l} className={l === "en" && ls.length > 1 ? "steps secondary" : "steps"}>
@@ -129,7 +140,7 @@ export default function PrintPassport({ id }: { id: string }) {
                 </div>
               </div>
               <div className="px-cols">
-                <div>
+                <div className="px-dose">
                   <h4><T lang={lang} k="dose" /></h4>
                   <p><Pair lang={lang} en={doseIn(it, "en")} pa={doseIn(it, "pa")} /></p>
                 </div>
