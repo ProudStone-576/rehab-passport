@@ -50,20 +50,34 @@ Single source of truth for this project. Read this first; open only the file you
 | `app/api/data`, `app/api/sync`, `app/api/reset` | Clinician data load / save / demo reset |
 | `app/api/phone/[token]/route.ts` | Patient phone GET/POST |
 | `app/login/page.tsx` | Sign in / create account / open demo clinic |
-| `app/(clinic)/layout.tsx` | StoreProvider + Nav (name, Saving…/Saved, Sign out) |
-| `app/(clinic)/page.tsx` | Dashboard: stats, patients, 7-day completion, next visit+time, pain flag |
+| `app/(clinic)/layout.tsx` | StoreProvider + Nav (Nav renders the whole shell: sidebar, mobile drawer, `<main>`) |
+| `app/(clinic)/page.tsx` | Dashboard: date + welcome, search, 4 figures, Needs attention (overdue / pain 7+), upcoming visits (7 d), recent activity, top 6 patients |
+| `app/(clinic)/patients/page.tsx` + `PatientList.tsx` | Patient list: search + filters (`?q=`, `?f=attention|pain|overdue|noplan`) |
+| `app/(clinic)/settings/page.tsx` | Clinic details form (printed on passports) + Reset demo data; warns when therapist name is a placeholder |
 | `app/(clinic)/patients/new/page.tsx` | New patient (+ language, phoneToken) |
-| `app/(clinic)/patients/[id]/PatientView.tsx` | Patient: language, phone view/copy link, stats (period %, next visit + reschedule), period grid with phone-tick colour + pain row, Review (+next visit), Feedback, history, versions, delete |
+| `app/(clinic)/patients/[id]/PatientView.tsx` | Patient profile, tabs via `?tab=` (Overview / tracking / review / feedback / history): alerts, stats + reschedule, current plan, phone link, tick grid + pain row, Review form + history, Feedback form + list, versions, delete (history tab). Toasts on save |
 | `app/(clinic)/patients/[id]/plan/PlanWizard.tsx` | 4-step wizard; Confirm has next visit + clinician minutes |
 | `app/(clinic)/patients/[id]/print/PrintPassport.tsx` | A4 print in patient language: cover (visit date+time, phone QR), exercise blocks, period tick grid, pain sheet, feedback page |
-| `app/(clinic)/library/page.tsx` | Library: figures, en+pa, video credit, step photos, add custom (+pa) |
-| `app/(clinic)/evaluation/page.tsx` | Feasibility metrics, completion tables, safety/pain + phone-use table, clinic details, CSV/JSON export, reset to demo |
+| `app/(clinic)/library/page.tsx` | Library: picture cards, search + area chips, side panel = selected exercise (animation, steps en+pa, precautions, photos, delete) or Add custom form |
+| `app/(clinic)/evaluation/page.tsx` | Feasibility metrics, completion by passport (table) and exercise (bars), safety/pain + phone-use table, CSV/JSON export (header) |
 | `app/(clinic)/about/page.tsx` | How it works + privacy |
 | `app/e/[code]/page.tsx` | Single-exercise QR page (server, stateless) |
 | `app/p/[token]/MyPassport.tsx` | Patient phone: visit countdown + period strip/progress, today ticks, steps/video/read-aloud, pain buttons, call, stop box |
 | `lib/animation.ts` | Pose blending, IK, per-exercise motion, rep timeline |
 | `components/AnimatedFigure.tsx` | Looping animated stick figure with rep/phase/speed controls |
 | `components/{Nav,Qr,Figure,Bi,ExerciseView,Listen}.tsx` | Shared UI (Figure exports `skeleton`, `propEl`, `FrameSvg`, `W`, `H`) |
+| `components/Icon.tsx` | Inline SVG icon set (no icon library); always beside a text label |
+| `components/PatientTable.tsx`, `lib/overview.ts` | Shared patient table (restacks on phones) and read-only derived rows / recent activity |
+| `app/tokens.css` | Design tokens: brand colours, type scale, spacing, radius, shadows, motion. **All colours live here.** |
+| `app/globals.css` | Hallmark stamp + base + clinic components; imports tokens, `patient.css` (phone/QR pages, 18px body, 56px buttons), `print.css` (A4 passport, mm units) |
+| `PUNJABI_REVIEW.md` | What Punjabi text needs native-speaker + physio review |
+
+## Design system (v5 redesign)
+- Brand: navy #101D35, blue #193C56, teal #159E91 (accents), **#0D776D for teal text and filled buttons** (white on #159E91 is only 3.3:1), mint #E8F4F1, background #F5F7FA. Inter + Noto Sans Gurmukhi via `next/font` (self-hosted).
+- Clinic: sidebar shell, controls 40px (44px hit), cards 12px radius. Patient pages: 18px body, Mark done 56px, pain buttons 44 to 52px.
+- Motion is state only (transform/opacity, 120 to 220ms), all off under reduced motion.
+- No logic, API, data or link-format changes in the redesign: `/p/<token>` and `/e/<code>` unchanged.
+- Screen checks without a DB: run `next dev`/`next start` with dummy env and mock `/api/data`, `/api/sync`, `/api/phone/*` with Playwright routes (harness lived in the session scratchpad).
 
 ## Commands
 - Dev: `npm run dev` · Check: `npm run lint && npm run build` · Local prod: `npx next start -p 3456` (on Windows kill the node PID on 3456 afterwards — TaskStop leaves it running)
@@ -76,11 +90,12 @@ Single source of truth for this project. Read this first; open only the file you
 - [x] v3 Neon DB + accounts + demo clinic, live phone sync, next visit date/time, visit-period progress, pain 0–10, read-aloud (2026-10-28) — tested local + production
 - [x] v4 animated exercise figures for all 12 (2026-10-29) — frames checked headless, deployed
 - [ ] Offline/PWA mode — build only when user says "offline" (see memory)
-- [ ] Native speaker to proof-read Punjabi (`lib/i18n.ts`, `lib/exercises.ts`)
+- [x] v5 full UI redesign (2026-11-15) on branch `redesign`, see below
+- [ ] Native speaker + physio to proof-read Punjabi (see `PUNJABI_REVIEW.md`)
 - [ ] Optional: record own Punjabi demo videos
 
 ## Known limits / ideas
-- Demo clinic is shared and editable by anyone; reset via Evaluation page.
+- Demo clinic is shared and editable by anyone; reset via Clinic settings.
 - No password reset / email verification. No rate limiting on login.
 - Photos stored as data URLs in Postgres (fine for prototype; use blob storage at scale).
 - Ideas: SMS/WhatsApp visit reminders, Hindi, large-print mode, offline queue for phone ticks.
@@ -91,3 +106,4 @@ Single source of truth for this project. Read this first; open only the file you
 - 2026-10-28 — v3: Postgres backend (fixes "patient missing on other device" — data was per-browser localStorage), therapist accounts + demo clinic, live phone sync (sync codes removed), next visit date/time, visit-period progress, pain score, read-aloud.
 - 2026-10-29 — v4: animated exercise figures (rep counter, phases, slow/pause) on phone pages + library; bilingual header label contrast fix; poster + presentation script made as claude.ai artifacts.
 - 2026-11-02 — code moved to GitHub (proudstone-576/rehab-passport); Vercel deploys on push to `main`.
+- 2026-11-15 — v5 redesign (branch `redesign`): tokens + component system, navy sidebar, new Dashboard (needs attention, upcoming visits, recent activity), `/patients` list with search/filters, patient tabs, picture-card library, wizard with dose steppers, simpler evaluation bars, new `/settings`, bigger patient phone/QR pages, refreshed A4 print (checked as PDF in en/pa/both). Hallmark lint 131 → 0 open Floor FAILs (waivers recorded in `globals.css`).

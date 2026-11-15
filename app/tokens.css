@@ -37,6 +37,11 @@
   --color-ok-soft: #e7f5ec;
   --color-caution-soft: #fff6db;
   --color-phone: #193c56;
+  --color-scrim: rgb(16 29 53 / 0.45);
+  --color-on-dark-track: rgb(255 255 255 / 0.2);
+  --color-on-dark-line: rgb(255 255 255 / 0.4);
+  --color-on-dark-faint: rgb(255 255 255 / 0.3);
+  --color-on-dark-accent-soft: rgb(95 211 198 / 0.35);
 
   /* print-only neutrals */
   --color-print-desk: #c9d3dc;

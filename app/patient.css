@@ -101,16 +101,16 @@ h1 .bi-en, .patient-band .bi-en, .visit-card .bi-en, .period-progress .bi-en { c
 .visit-card strong { font-size: var(--text-xl); }
 .visit-card > span { color: var(--color-on-dark-muted); font-size: var(--text-md); }
 .period-progress { margin-top: var(--space-sm); }
-.period-progress .bar { background: rgb(255 255 255 / 0.2); height: 10px; }
+.period-progress .bar { background: var(--color-on-dark-track); height: 10px; }
 .period-progress .bar > div { background: var(--color-on-dark-accent); }
 .period-progress small { color: var(--color-on-dark-muted); font-weight: 400; display: block; margin-top: var(--space-2xs); }
 .period-strip { display: flex; gap: var(--space-2xs); margin-top: var(--space-sm); overflow-x: auto; padding-bottom: var(--space-3xs); }
 .period-strip .week-day { flex: 0 0 28px; }
 .period-strip .week-day small { color: var(--color-on-dark-muted); font-size: var(--text-xs); }
-.period-strip .dot { width: 26px; height: 26px; font-size: var(--text-xs); border-color: rgb(255 255 255 / 0.4); color: var(--color-on-dark); }
-.period-strip .dot.part { background: rgb(95 211 198 / 0.35); border-color: var(--color-on-dark-accent); }
+.period-strip .dot { width: 26px; height: 26px; font-size: var(--text-xs); border-color: var(--color-on-dark-line); color: var(--color-on-dark); }
+.period-strip .dot.part { background: var(--color-on-dark-accent-soft); border-color: var(--color-on-dark-accent); }
 .period-strip .dot.full { background: var(--color-on-dark-accent); border-color: var(--color-on-dark-accent); color: var(--color-navy); }
-.period-strip .dot.future { border-style: dashed; border-color: rgb(255 255 255 / 0.3); }
+.period-strip .dot.future { border-style: dashed; border-color: var(--color-on-dark-faint); }
 .period-strip .dot.visit { background: var(--color-on-dark); border-color: var(--color-on-dark); }
 .period-strip .now .dot { box-shadow: 0 0 0 2px var(--color-on-dark); }
 
@@ -131,7 +131,7 @@ h1 .bi-en, .patient-band .bi-en, .visit-card .bi-en, .period-progress .bi-en { c
 .anim-box { border: 1px solid var(--color-mint-2); background: var(--color-mint); }
 .anim-title { font-size: var(--text-md); font-weight: 600; color: var(--color-accent-strong); margin: 0 0 var(--space-xs); }
 .anim { display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); width: 100%; }
-.sk-band { height: 120px; max-width: var(--patient-max); margin: 0 auto; background: var(--color-blue); }
+.sk-band { color: var(--color-on-dark); height: 120px; max-width: var(--patient-max); margin: 0 auto; background: var(--color-blue); }
 .anim-svg { max-width: 100%; height: auto; background: var(--color-surface); border-radius: var(--radius-control); }
 .anim-bar { display: flex; align-items: center; gap: var(--space-xs); width: 100%; flex-wrap: wrap; font-size: var(--text-sm); }
 .anim-btn { min-height: var(--hit); font-size: var(--text-sm); }
@@ -140,4 +140,4 @@ h1 .bi-en, .patient-band .bi-en, .visit-card .bi-en, .period-progress .bi-en { c
 .anim-rep strong { font-size: var(--text-lg); color: var(--color-navy); font-variant-numeric: tabular-nums; }
 .anim-phase { color: var(--color-accent-strong); font-weight: 600; }
 
-.remind svg { flex: none; margin-top: 3px; }
+.remind svg { flex: none; margin-top: var(--space-2xs); }

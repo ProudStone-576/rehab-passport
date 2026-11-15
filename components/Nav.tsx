@@ -54,6 +54,7 @@ export default function Nav({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={open ? "shell open" : "shell"}>
+      <a href="#main" className="skip-link">Skip to content</a>
       <header className="mobile-bar no-print">
         {brand}
         <button type="button" className="menu-btn" aria-expanded={open} aria-controls="sidebar" onClick={() => setOpen(true)}>

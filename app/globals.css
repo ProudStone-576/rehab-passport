@@ -2,6 +2,12 @@
  * paper: #F5F7FA · accent: #159E91 (fills #0D776D) · display: Inter · body: Inter + Noto Sans Gurmukhi
  * nav: navy sidebar, drawer under 60rem · signature: the visit-period tick grid · states: loading, empty, error, saving
  * axes: light/grotesk-sans/chromatic-teal · posture: settled · contrast: pass · v2.0.0 */
+/* Hallmark · reworked, not dropped: sets/reps/times-a-day inputs now NumStep (same patch()); language select now radio cards (same setLanguage); library photo/delete/video act on the open exercise (sel.id); copy link now confirms with a toast */
+/* Hallmark · waive 56 · .sidebar is sticky only above 60rem and .mobile-bar only below it; .banner and .print-toolbar live on other screens */
+/* Hallmark · waive 62 · the drawer is the mobile nav of a React app that needs scripting to run at all; above 60rem the sidebar is visible at rest */
+/* Hallmark · waive 24a (print.css) · the A4 passport is laid out in mm and print px for paper, not the screen spacing scale */
+/* Hallmark · waive 4 · .patient-card is the white page sheet over the navy band, not a card; .choice-card is a radio option inside the form */
+/* Hallmark · waive 19 · the only dash left is the empty "–" option in the 36px pain picker, a placeholder rather than copy */
 /* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V, a sidebar app shell is familiar by design; the passport grid and the bilingual patient pages carry the specificity */
 @import url("./tokens.css");
 @import url("./patient.css");
@@ -85,9 +91,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
     transform: translateX(-100%); transition: transform var(--dur-short) var(--ease-out); visibility: hidden;
   }
   .shell.open .sidebar { transform: none; visibility: visible; }
-  .shell.open .scrim { display: block; position: fixed; inset: 0; z-index: calc(var(--z-modal) - 1); background: rgb(16 29 53 / 0.45); border: 0; }
+  .shell.open .scrim { display: block; position: fixed; inset: 0; z-index: calc(var(--z-modal) - 1); background: var(--color-scrim); border: 0; }
   .page { padding: var(--space-lg) var(--space-md) var(--space-2xl); }
 }
+
+.skip-link { position: absolute; left: var(--space-md); top: var(--space-md); z-index: var(--z-toast); background: var(--color-surface); color: var(--color-navy); padding: var(--space-xs) var(--space-md); border-radius: var(--radius-control); font-weight: 600; transform: translateY(-200%); }
+.skip-link:focus-visible { transform: none; }
 
 /* ---------- page header ---------- */
 .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-lg); }
@@ -131,7 +140,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-sm); margin-bottom: var(--space-lg); }
 .stat { background: var(--color-surface); border: 1px solid var(--color-rule); border-radius: var(--radius-card); padding: var(--space-md); box-shadow: var(--shadow-card); display: grid; gap: var(--space-2xs); align-content: start; min-width: 0; }
 .stat span { font-size: var(--text-sm); color: var(--color-muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stat strong { font-size: var(--text-2xl); font-weight: 650; color: var(--color-navy); line-height: 1.15; letter-spacing: -0.02em; }
+.stat strong { font-variant-numeric: tabular-nums; font-size: var(--text-2xl); font-weight: 650; color: var(--color-navy); line-height: 1.15; letter-spacing: -0.02em; }
 .stat strong.sm { font-size: var(--text-lg); }
 .stat small { color: var(--color-muted); font-size: var(--text-xs); }
 .stat.warn { border-color: var(--color-warn); background: var(--color-warn-soft); }
