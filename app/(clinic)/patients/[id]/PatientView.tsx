@@ -3,19 +3,25 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Figure from "@/components/Figure";
+import Icon from "@/components/Icon";
 import {
-  activePassport, adherence, dateKey, defaultVisit, doseText, findExercise, fmtDate, fmtDay, fmtTime, isDone, logId,
+  activePassport, addDays, adherence, dateKey, defaultVisit, doseText, findExercise, fmtDate, fmtDay, fmtTime, isDone, logId,
   painId, passportDays, visitPeriod, uid,
 } from "@/lib/logic";
 import { useStore } from "@/lib/store";
 import type { Feedback, Lang, Passport, Review } from "@/lib/types";
 
-export default function PatientPage({ id }: { id: string }) {
+export default function PatientPage({ id, tab }: { id: string; tab: string }) {
   const { data, update } = useStore();
   const router = useRouter();
   const [history, setHistory] = useState(false);
   const [origin, setOrigin] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState("");
+  const say = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2200);
+  };
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- window is only available after mount
     setOrigin(window.location.origin);
@@ -25,7 +31,15 @@ export default function PatientPage({ id }: { id: string }) {
   const p = activePassport(data, id);
   const versions = data.passports.filter((x) => x.patientId === id).sort((a, b) => b.version - a.version);
 
-  if (!patient) return <p>Patient not found. <Link href="/">Back</Link></p>;
+  if (!patient) {
+    return (
+      <div className="card empty">
+        <strong>Patient not found</strong>
+        <span>They may have been deleted, or the link is wrong.</span>
+        <Link href="/patients" className="btn">Back to patients</Link>
+      </div>
+    );
+  }
 
   const today = dateKey();
   const period = p ? visitPeriod(data, p) : null;
@@ -70,16 +84,28 @@ export default function PatientPage({ id }: { id: string }) {
       reviews: d.reviews.filter((r) => r.patientId !== id),
       feedback: d.feedback.filter((f) => f.patientId !== id),
     }));
-    router.push("/");
+    router.push("/patients");
   }
+
+  const recentPain = p ? data.pain.filter((x) => x.passportId === p.id && x.date > addDays(today, -3) && x.date <= today) : [];
+  const maxPain = recentPain.length ? Math.max(...recentPain.map((x) => x.score)) : null;
+  const TABS = [
+    { id: "", label: "Overview" },
+    { id: "tracking", label: "Exercise tracking" },
+    { id: "review", label: "Clinical review", count: reviews.length },
+    { id: "feedback", label: "Feedback", count: feedback.length },
+    { id: "history", label: "Passport history", count: versions.length },
+  ];
+  const current = TABS.some((t) => t.id === tab) ? tab : "";
+  const href = (t: string) => (t ? `?tab=${t}` : `/patients/${id}`);
 
   return (
     <>
-      <div className="page-head">
+      <Link href="/patients" className="crumb"><Icon name="back" size={16} />Patients</Link>
+      <div className="page-head patient-head">
         <div>
-          <Link href="/" className="muted small">← Patients</Link>
-          <h1>{patient.code} <span className="muted light">{patient.initials}{patient.age ? `, ${patient.age} y` : ""}</span></h1>
-          <p className="muted">{patient.condition}</p>
+          <h1>{patient.code} <span className="light">{patient.initials}{patient.age ? `, ${patient.age} y` : ""}</span></h1>
+          <p>{patient.condition}</p>
           <label className="inline-select">
             Passport language
             <select
@@ -91,220 +117,300 @@ export default function PatientPage({ id }: { id: string }) {
             >
               <option value="en">English</option>
               <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
-              <option value="both">Both — ਪੰਜਾਬੀ + English</option>
+              <option value="both">Both: ਪੰਜਾਬੀ + English</option>
             </select>
           </label>
         </div>
-        <div className="row-gap">
+        <div className="head-actions wrap">
           {p && phoneLink && (
             <>
-              <a href={phoneLink} target="_blank" rel="noreferrer" className="btn">📱 Patient&apos;s phone view</a>
+              <a href={phoneLink} target="_blank" rel="noreferrer" className="btn"><Icon name="phone" size={18} />Phone view</a>
               <button
                 type="button"
                 className="btn"
-                onClick={() => navigator.clipboard?.writeText(phoneLink).then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
-                })}
+                onClick={() => navigator.clipboard?.writeText(phoneLink).then(() => say("Phone link copied"), () => say("Copy failed. Open the phone view and copy its address."))}
               >
-                {copied ? "Copied ✓" : "Copy phone link"}
+                <Icon name="copy" size={18} />Copy phone link
               </button>
             </>
           )}
-          {p && <Link href={`/patients/${id}/print`} className="btn">🖨 Print passport</Link>}
-          <Link href={`/patients/${id}/plan`} className="btn primary">{p ? "Adjust plan" : "Create passport"}</Link>
+          {p && <Link href={`/patients/${id}/print`} className="btn"><Icon name="print" size={18} />Print passport</Link>}
+          <Link href={`/patients/${id}/plan`} className="btn primary"><Icon name="edit" size={18} />{p ? "Adjust plan" : "Create passport"}</Link>
         </div>
       </div>
 
       {!p || !period ? (
         <div className="card empty">
-          <p>No passport yet. Start with <strong>Assess → Personalize → Demonstrate</strong>.</p>
+          <strong>No passport yet</strong>
+          <span>Start with Assess, Personalize and Demonstrate. It takes a few minutes.</span>
           <Link href={`/patients/${id}/plan`} className="btn primary">Create passport</Link>
         </div>
       ) : (
         <>
-          <div className="stats">
-            <div className="stat"><span>Passport</span><strong>v{p.version}</strong><small>since {fmtDate(p.startDate)}</small></div>
-            <div className="stat">
-              <span>This visit period</span>
-              <strong>{periodAdh?.pct ?? 0}%</strong>
-              <small>{periodAdh?.done} of {periodAdh?.expected} exercise-days so far</small>
+          {(period.overdue || (maxPain !== null && maxPain >= 7)) && (
+            <div className="alerts">
+              {maxPain !== null && maxPain >= 7 && (
+                <div className="alert danger" role="alert">
+                  <Icon name="alert" />
+                  <p><strong>Pain {maxPain}/10 reported in the last 3 days.</strong> Check safety before the next visit.</p>
+                </div>
+              )}
+              {period.overdue && (
+                <div className="alert warn">
+                  <Icon name="calendar" />
+                  <p><strong>Visit overdue since {fmtDate(period.visit)}.</strong> Change the date under Next visit on the Overview, or contact the patient.</p>
+                </div>
+              )}
             </div>
-            <div className={period.overdue ? "stat warn" : "stat"}>
-              <span>Next visit</span>
-              <strong className="sm">{fmtDate(period.visit)}{p.nextVisit ? `, ${fmtTime(p.nextVisit)}` : ""}</strong>
-              <small>
-                {period.overdue ? "Overdue" : period.daysLeft === 0 ? "Today" : `in ${period.daysLeft} day${period.daysLeft === 1 ? "" : "s"}`}
-                {!p.nextVisit && " · not booked"}
-              </small>
-              <input
-                type="datetime-local"
-                className="visit-input"
-                aria-label="Reschedule next visit"
-                value={p.nextVisit ?? ""}
-                onChange={(e) => setVisit(p, e.target.value)}
-              />
-            </div>
-            <div className="stat"><span>Setup time</span><strong>{p.setupMinutes} min</strong></div>
-          </div>
+          )}
 
-          <section className="card">
-            <div className="card-head">
-              <h2>4 · Track — {history ? "whole passport" : "this visit period"}</h2>
-              <span className="muted small">
-                {history ? `${fmtDate(p.startDate)} → today` : `${fmtDate(period.start)} → visit ${fmtDate(period.visit)}`}
-                {" · "}
-                <button type="button" className="link small" onClick={() => setHistory(!history)}>
-                  {history ? "Show this visit period" : "Show whole passport"}
-                </button>
-              </span>
-            </div>
-            <p className="muted small">
-              Ticks from the patient&apos;s phone appear automatically. Tap a box to copy a tick from the paper passport.
-            </p>
-            <div className="log-wrap">
-              <table className="log">
-                <thead>
-                  <tr>
-                    <th>Exercise</th>
-                    {days.map((d) => (
-                      <th key={d} className={d === today ? "today" : d === period.visit ? "visit" : ""}>{fmtDay(d)}</th>
-                    ))}
-                    <th>%</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <nav className="tabbar" aria-label="Patient sections">
+            {TABS.map((t) => (
+              <Link key={t.id} href={href(t.id)} replace scroll={false} aria-current={current === t.id ? "page" : undefined}>
+                {t.label}
+                {t.count !== undefined && <span className="count">{t.count}</span>}
+              </Link>
+            ))}
+          </nav>
+
+          {current === "" && (
+            <div className="tab-panel">
+              <div className="stats">
+                <div className="stat"><span>Passport</span><strong>v{p.version}</strong><small>since {fmtDate(p.startDate)}</small></div>
+                <div className="stat">
+                  <span>This visit period</span>
+                  <strong>{periodAdh?.pct ?? 0}%</strong>
+                  <small>{periodAdh?.done} of {periodAdh?.expected} exercise-days so far</small>
+                </div>
+                <div className={period.overdue ? "stat visit-stat warn" : "stat visit-stat"}>
+                  <span>Next visit</span>
+                  <strong className="sm">{fmtDate(period.visit)}{p.nextVisit ? `, ${fmtTime(p.nextVisit)}` : ""}</strong>
+                  <small>
+                    {period.overdue ? "Overdue" : period.daysLeft === 0 ? "Today" : `in ${period.daysLeft} day${period.daysLeft === 1 ? "" : "s"}`}
+                    {!p.nextVisit && ", not booked"}
+                  </small>
+                  <input
+                    type="datetime-local"
+                    className="visit-input"
+                    aria-label="Reschedule next visit"
+                    value={p.nextVisit ?? ""}
+                    onChange={(e) => setVisit(p, e.target.value)}
+                  />
+                </div>
+                <div className="stat"><span>Setup time</span><strong>{p.setupMinutes} min</strong></div>
+              </div>
+
+              <section className="card" aria-labelledby="plan-h">
+                <div className="card-head">
+                  <h2 id="plan-h">Current plan</h2>
+                  <Link href={href("tracking")} replace scroll={false} className="link">Open the tick grid</Link>
+                </div>
+                <ul className="plan-list">
                   {p.items.map((it) => {
                     const ex = findExercise(data, it.exerciseId);
-                    const past = days.filter((d) => d <= today);
-                    const doneCount = past.filter((d) => isDone(data.logs, p.id, it.id, d)).length;
+                    const past = period.elapsed;
+                    const done = past.filter((d) => isDone(data.logs, p.id, it.id, d)).length;
+                    const pct = past.length ? Math.round((done / past.length) * 100) : 0;
                     return (
-                      <tr key={it.id}>
-                        <td>
+                      <li key={it.id}>
+                        <span className="plan-fig">{ex?.builtin ? <Figure exerciseId={it.exerciseId} frame={1} height={56} /> : null}</span>
+                        <span className="plan-name">
                           <strong>{ex?.name}</strong>
-                          <div className="muted small">{doseText(it)}</div>
-                        </td>
-                        {days.map((d) => {
-                          const log = data.logs.find((l) => l.id === logId(p.id, it.id, d));
-                          const future = d > today;
-                          return (
-                            <td key={d}>
-                              <button
-                                type="button"
-                                className={`box${log ? " on" : ""}${log?.source === "phone" ? " phone" : ""}`}
-                                disabled={future}
-                                title={log ? `Done (${log.source})` : future ? "Upcoming" : "Not done"}
-                                aria-label={`${ex?.name} ${d} ${log ? "done" : "not done"}`}
-                                onClick={() => toggle(p, it.id, d)}
-                              >
-                                {log ? "✓" : ""}
-                              </button>
-                            </td>
-                          );
-                        })}
-                        <td className="pct">{past.length ? Math.round((doneCount / past.length) * 100) : 0}%</td>
-                      </tr>
+                          {ex?.pa && <span lang="pa" className="muted small">{ex.pa.name}</span>}
+                        </span>
+                        <span className="plan-dose">{doseText(it)}</span>
+                        <span className="bar-row plan-bar">
+                          <span className="bar" aria-hidden="true"><span style={{ width: `${pct}%` }} className={pct < 60 ? "low" : ""} /></span>
+                          <span>{pct}%</span>
+                        </span>
+                      </li>
                     );
                   })}
-                  <tr className="pain-row">
-                    <td>
-                      <strong>Pain</strong>
-                      <div className="muted small">0 = none · 10 = worst</div>
-                    </td>
-                    {days.map((d) => {
-                      const entry = data.pain.find((x) => x.id === painId(p.id, d));
+                </ul>
+                {p.assessment && <p className="muted small plan-note"><strong>Assessment:</strong> {p.assessment}</p>}
+              </section>
+
+              {phoneLink && (
+                <section className="card phone-card" aria-labelledby="phone-h">
+                  <div>
+                    <h2 id="phone-h">Patient&apos;s phone link</h2>
+                    <p className="muted">Ticks and pain scores from this link appear here within seconds. It never shows the patient&apos;s name or condition.</p>
+                  </div>
+                  <code className="link-box">{phoneLink}</code>
+                </section>
+              )}
+            </div>
+          )}
+
+          {current === "tracking" && (
+            <section className="card tab-panel" aria-labelledby="track-h">
+              <div className="card-head">
+                <h2 id="track-h">Track: {history ? "whole passport" : "this visit period"}</h2>
+                <span className="muted small">
+                  {history ? `${fmtDate(p.startDate)} to today` : `${fmtDate(period.start)} to visit ${fmtDate(period.visit)}`}
+                  {", "}
+                  <button type="button" className="link small" onClick={() => setHistory(!history)}>
+                    {history ? "show this visit period" : "show whole passport"}
+                  </button>
+                </span>
+              </div>
+              <p className="muted small">
+                Ticks from the patient&apos;s phone appear automatically. Tap a box to copy a tick from the paper passport.
+              </p>
+              <div className="log-wrap">
+                <table className="log">
+                  <thead>
+                    <tr>
+                      <th scope="col">Exercise</th>
+                      {days.map((d) => (
+                        <th scope="col" key={d} className={d === today ? "today" : d === period.visit ? "visit" : ""}>{fmtDay(d)}</th>
+                      ))}
+                      <th scope="col">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {p.items.map((it) => {
+                      const ex = findExercise(data, it.exerciseId);
+                      const past = days.filter((d) => d <= today);
+                      const doneCount = past.filter((d) => isDone(data.logs, p.id, it.id, d)).length;
                       return (
-                        <td key={d}>
-                          <select
-                            className={`pain-cell${entry ? ` p${Math.min(3, Math.floor(entry.score / 3.4) + 1)}` : ""}${entry && entry.score >= 7 ? " high" : ""}`}
-                            value={entry?.score ?? ""}
-                            disabled={d > today}
-                            aria-label={`Pain on ${d}`}
-                            onChange={(e) => setPain(p, d, e.target.value)}
-                          >
-                            <option value="">–</option>
-                            {Array.from({ length: 11 }, (_, n) => <option key={n} value={n}>{n}</option>)}
-                          </select>
-                        </td>
+                        <tr key={it.id}>
+                          <td>
+                            <strong>{ex?.name}</strong>
+                            <div className="muted small">{doseText(it)}</div>
+                          </td>
+                          {days.map((d) => {
+                            const log = data.logs.find((l) => l.id === logId(p.id, it.id, d));
+                            const future = d > today;
+                            return (
+                              <td key={d}>
+                                <button
+                                  type="button"
+                                  className={`box${log ? " on" : ""}${log?.source === "phone" ? " phone" : ""}`}
+                                  disabled={future}
+                                  title={log ? `Done (${log.source})` : future ? "Upcoming" : "Not done"}
+                                  aria-label={`${ex?.name} ${d} ${log ? "done" : "not done"}`}
+                                  aria-pressed={!!log}
+                                  onClick={() => toggle(p, it.id, d)}
+                                >
+                                  {log ? <Icon name="check" size={16} /> : ""}
+                                </button>
+                              </td>
+                            );
+                          })}
+                          <td className="pct">{past.length ? Math.round((doneCount / past.length) * 100) : 0}%</td>
+                        </tr>
                       );
                     })}
-                    <td />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p className="muted small legend">
-              <span className="box on sample">✓</span> paper/clinic <span className="box on phone sample">✓</span> from phone
-              <span className="pain-cell high sample">7</span> pain 7+ — check safety
-            </p>
-            {p.assessment && <p className="muted small"><strong>Assessment:</strong> {p.assessment}</p>}
-          </section>
+                    <tr className="pain-row">
+                      <td>
+                        <strong>Pain</strong>
+                        <div className="muted small">0 is none, 10 is worst</div>
+                      </td>
+                      {days.map((d) => {
+                        const entry = data.pain.find((x) => x.id === painId(p.id, d));
+                        return (
+                          <td key={d}>
+                            <select
+                              className={`pain-cell${entry ? ` p${Math.min(3, Math.floor(entry.score / 3.4) + 1)}` : ""}${entry && entry.score >= 7 ? " high" : ""}`}
+                              value={entry?.score ?? ""}
+                              disabled={d > today}
+                              aria-label={`Pain on ${d}`}
+                              onChange={(e) => setPain(p, d, e.target.value)}
+                            >
+                              <option value="">–</option>
+                              {Array.from({ length: 11 }, (_, n) => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                          </td>
+                        );
+                      })}
+                      <td />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="legend">
+                <span className="box on sample" aria-hidden="true"><Icon name="check" size={14} /></span> paper or clinic
+                <span className="box on phone sample" aria-hidden="true"><Icon name="check" size={14} /></span> from phone
+                <span className="pain-cell high sample" aria-hidden="true">7</span> pain 7 or more: check safety
+              </p>
+              {p.assessment && <p className="muted small"><strong>Assessment:</strong> {p.assessment}</p>}
+            </section>
+          )}
 
-          <div className="grid2 top">
-            <ReviewForm
-              key={p.id}
-              initialVisit={p.nextVisit && p.nextVisit.slice(0, 10) > today ? p.nextVisit : defaultVisit()}
-              onSave={(r, nextVisit) => {
-                update((d) => ({
-                  ...d,
-                  reviews: [...d.reviews, { ...r, id: uid(), patientId: id, passportId: p.id }],
-                  passports: d.passports.map((x) =>
-                    x.id === p.id ? { ...x, nextVisit: r.outcome === "discharged" ? undefined : nextVisit || undefined } : x,
-                  ),
-                }));
-                if (r.outcome === "modified") router.push(`/patients/${id}/plan`);
-              }}
-            />
-            <FeedbackForm
-              onSave={(f) => update((d) => ({ ...d, feedback: [...d.feedback, { ...f, id: uid(), patientId: id, passportId: p.id }] }))}
-            />
-          </div>
+          {current === "review" && (
+            <div className="grid2 tab-panel review-grid">
+              <ReviewForm
+                key={p.id}
+                initialVisit={p.nextVisit && p.nextVisit.slice(0, 10) > today ? p.nextVisit : defaultVisit()}
+                onSave={(r, nextVisit) => {
+                  update((d) => ({
+                    ...d,
+                    reviews: [...d.reviews, { ...r, id: uid(), patientId: id, passportId: p.id }],
+                    passports: d.passports.map((x) =>
+                      x.id === p.id ? { ...x, nextVisit: r.outcome === "discharged" ? undefined : nextVisit || undefined } : x,
+                    ),
+                  }));
+                  say("Review saved");
+                  if (r.outcome === "modified") router.push(`/patients/${id}/plan`);
+                }}
+              />
+              <section className="card">
+                <h2>Review history</h2>
+                {reviews.length === 0 && <p className="muted">No reviews yet. Save one at the follow-up visit.</p>}
+                {reviews.map((r) => (
+                  <div key={r.id} className="entry">
+                    <div className="entry-head">
+                      <strong>{fmtDate(r.date)}</strong>
+                      <span className={`pill ${r.outcome}`}>{r.outcome}</span>
+                      <span className="muted small">{r.minutes} min</span>
+                    </div>
+                    <p>{r.notes}</p>
+                  </div>
+                ))}
+              </section>
+            </div>
+          )}
+
+          {current === "feedback" && (
+            <div className="grid2 tab-panel review-grid">
+              <FeedbackForm
+                onSave={(f) => {
+                  update((d) => ({ ...d, feedback: [...d.feedback, { ...f, id: uid(), patientId: id, passportId: p.id }] }));
+                  say("Feedback saved");
+                }}
+              />
+              <section className="card">
+                <h2>Patient feedback</h2>
+                {feedback.length === 0 && <p className="muted">No feedback yet.</p>}
+                {feedback.map((f) => (
+                  <div key={f.id} className="entry">
+                    <div className="entry-head">
+                      <strong>{fmtDate(f.date)}</strong>
+                      <span className="pill">Ease {f.ease}/5</span>
+                      <span className="pill">Understood: {f.understood}</span>
+                    </div>
+                    {f.comments && <p>“{f.comments}”</p>}
+                  </div>
+                ))}
+              </section>
+            </div>
+          )}
         </>
       )}
 
-      <div className="grid2 top">
-        <section className="card">
-          <h2>Review history</h2>
-          {reviews.length === 0 && <p className="muted">No reviews yet.</p>}
-          {reviews.map((r) => (
-            <div key={r.id} className="entry">
-              <div className="entry-head">
-                <strong>{fmtDate(r.date)}</strong>
-                <span className={`pill ${r.outcome}`}>{r.outcome}</span>
-                <span className="muted small">{r.minutes} min</span>
-              </div>
-              <p>{r.notes}</p>
-            </div>
-          ))}
-        </section>
-        <section className="card">
-          <h2>Patient feedback</h2>
-          {feedback.length === 0 && <p className="muted">No feedback yet.</p>}
-          {feedback.map((f) => (
-            <div key={f.id} className="entry">
-              <div className="entry-head">
-                <strong>{fmtDate(f.date)}</strong>
-                <span className="pill">Ease {f.ease}/5</span>
-                <span className="pill">Understood: {f.understood}</span>
-              </div>
-              {f.comments && <p>“{f.comments}”</p>}
-            </div>
-          ))}
-        </section>
-      </div>
-
-      {versions.length > 0 && (
-        <section className="card">
-          <h2>Passport versions</h2>
+      {(current === "history" || !p) && versions.length > 0 && (
+        <section className="card flush tab-panel">
+          <div className="card-head"><h2>Passport versions</h2></div>
           <table className="table">
-            <thead><tr><th>Version</th><th>Period</th><th>Exercises</th><th>Completion</th></tr></thead>
+            <thead><tr><th scope="col">Version</th><th scope="col">Period</th><th scope="col">Exercises</th><th scope="col">Completion</th></tr></thead>
             <tbody>
               {versions.map((h) => (
                 <tr key={h.id}>
                   <td>v{h.version} {h.status === "active" && <span className="pill">active</span>}</td>
-                  <td>{fmtDate(h.startDate)} – {h.endDate ? fmtDate(h.endDate) : "now"}</td>
+                  <td className="num">{fmtDate(h.startDate)} to {h.endDate ? fmtDate(h.endDate) : "now"}</td>
                   <td>{h.items.map((i) => findExercise(data, i.exerciseId)?.name).join(", ")}</td>
-                  <td>{adherence(h, data.logs).pct ?? 0}%</td>
+                  <td className="num">{adherence(h, data.logs).pct ?? 0}%</td>
                 </tr>
               ))}
             </tbody>
@@ -312,7 +418,8 @@ export default function PatientPage({ id }: { id: string }) {
         </section>
       )}
 
-      <p className="note"><button type="button" className="link danger" onClick={remove}>Delete patient</button></p>
+      {(current === "history" || !p) && <p className="note danger-zone"><button type="button" className="link danger" onClick={remove}>Delete patient and all their records</button></p>}
+      {toast && <div className="toast" role="status"><Icon name="check" />{toast}</div>}
     </>
   );
 }
@@ -333,7 +440,7 @@ function ReviewForm({
         setNotes("");
       }}
     >
-      <h2>5 · Review — follow-up visit</h2>
+      <h2>Follow-up visit</h2>
       <div className="grid2">
         <label>Outcome
           <select value={outcome} onChange={(e) => setOutcome(e.target.value as Review["outcome"])}>
@@ -373,9 +480,9 @@ function FeedbackForm({ onSave }: { onSave: (f: Omit<Feedback, "id" | "patientId
       <label>How easy was the passport to use?
         <div className="scale">
           {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} type="button" className={n === ease ? "on" : ""} onClick={() => setEase(n)}>{n}</button>
+            <button key={n} type="button" className={n === ease ? "on" : ""} aria-pressed={n === ease} onClick={() => setEase(n)}>{n}</button>
           ))}
-          <span className="muted small">1 = very hard · 5 = very easy</span>
+          <span className="muted small">1 is very hard, 5 is very easy</span>
         </div>
       </label>
       <label>Did they understand the instructions?

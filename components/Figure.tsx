@@ -2,10 +2,10 @@ import { FIGURES, L, add, dir, type Frame, type Pose, type Prop, type Pt } from 
 
 export const W = 130;
 export const H = 115;
-const INK = "#13294b";
+const INK = "#101d35";
 const FAR = "#9fb3c4";
 const PROP = "#8a97a3";
-export const ACCENT = "#0e9ca5";
+export const ACCENT = "#0d776d";
 
 function line(a: Pt, b: Pt, color: string, w: number, key: string) {
   return <line key={key} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={color} strokeWidth={w} strokeLinecap="round" />;
@@ -136,7 +136,7 @@ export default function Figure({
         </marker>
       </defs>
       <FrameSvg frame={frames[0]} x={0} marker={marker} />
-      <line x1={W + gap / 2} y1={10} x2={W + gap / 2} y2={H - 10} stroke="#d9e3e7" strokeWidth={1} strokeDasharray="3 3" />
+      <line x1={W + gap / 2} y1={10} x2={W + gap / 2} y2={H - 10} stroke="#e1e7ee" strokeWidth={1} strokeDasharray="3 3" />
       <FrameSvg frame={frames[1]} x={W + gap} marker={marker} />
       <g fontFamily="system-ui, sans-serif" fontSize="10" fontWeight="700">
         <circle cx={9} cy={9} r={7} fill={ACCENT} />
@@ -145,8 +145,8 @@ export default function Figure({
         <text x={W + gap + 9} y={12.5} textAnchor="middle" fill="#fff">2</text>
         {labels && (
           <>
-            <text x={21} y={12.5} fill="#5d6b7a" fontWeight="600">{labels[0]}</text>
-            <text x={W + gap + 21} y={12.5} fill="#5d6b7a" fontWeight="600">{labels[1]}</text>
+            <text x={21} y={12.5} fill="#5b6779" fontWeight="600">{labels[0]}</text>
+            <text x={W + gap + 21} y={12.5} fill="#5b6779" fontWeight="600">{labels[1]}</text>
           </>
         )}
       </g>
